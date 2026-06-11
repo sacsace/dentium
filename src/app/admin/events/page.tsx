@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CalendarCheck, CalendarClock, CalendarX, Layers, Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { DataTable } from "@/components/admin/DataTable";
 import { AdminInlineForm, FormField, inputClass } from "@/components/admin/AdminForm";
@@ -12,6 +12,7 @@ import { useConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { FeaturedImageField } from "@/components/admin/ImageUploadField";
 import { useAdminListPanel } from "@/hooks/useAdminListPanel";
 import { ADMIN_PANEL_CLASS, buildAdminBreadcrumbItems } from "@/lib/admin-panel";
+import { cn } from "@/lib/utils";
 
 interface Event {
   id: string;
@@ -156,8 +157,31 @@ function EventFormFields({
   );
 }
 
+type StatusFilter = "all" | "upcoming" | "completed" | "cancelled";
+
+const STATUS_TABS: { key: StatusFilter; label: string; icon: typeof Layers }[] = [
+  { key: "all", label: "All", icon: Layers },
+  { key: "upcoming", label: "Upcoming", icon: CalendarClock },
+  { key: "completed", label: "Completed", icon: CalendarCheck },
+  { key: "cancelled", label: "Cancelled", icon: CalendarX },
+];
+
+function matchesStatusFilter(status: string, filter: StatusFilter): boolean {
+  if (filter === "all") return true;
+  if (filter === "upcoming") return status === "UPCOMING" || status === "ONGOING";
+  if (filter === "completed") return status === "COMPLETED";
+  return status === "CANCELLED";
+}
+
+function defaultStatusForFilter(filter: StatusFilter): string {
+  if (filter === "completed") return "COMPLETED";
+  if (filter === "cancelled") return "CANCELLED";
+  return "UPCOMING";
+}
+
 export default function AdminEventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const { confirm, ConfirmDialogHost } = useConfirmDialog();
@@ -172,8 +196,23 @@ export default function AdminEventsPage() {
     fetchData();
   }, []);
 
+  const filteredEvents = useMemo(
+    () => events.filter((event) => matchesStatusFilter(event.status, statusFilter)),
+    [events, statusFilter]
+  );
+
+  const statusCounts = useMemo(
+    () => ({
+      all: events.length,
+      upcoming: events.filter((event) => matchesStatusFilter(event.status, "upcoming")).length,
+      completed: events.filter((event) => event.status === "COMPLETED").length,
+      cancelled: events.filter((event) => event.status === "CANCELLED").length,
+    }),
+    [events]
+  );
+
   const openCreate = () => {
-    setForm(EMPTY_FORM);
+    setForm({ ...EMPTY_FORM, status: defaultStatusForFilter(statusFilter) });
     panel.openCreate();
   };
 
@@ -248,17 +287,53 @@ export default function AdminEventsPage() {
         }
       />
 
+      <div className="flex flex-wrap border-b border-gray-200 mb-4">
+        {STATUS_TABS.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = statusFilter === tab.key;
+          const count = statusCounts[tab.key];
+
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setStatusFilter(tab.key)}
+              className={cn(
+                "inline-flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 -mb-px transition-colors",
+                isActive
+                  ? "border-brand-accent text-brand-navy"
+                  : "border-transparent text-brand-silver hover:text-brand-navy"
+              )}
+            >
+              <Icon className="w-4 h-4" />
+              {tab.label}
+              <span className={cn("text-xs tabular-nums", isActive ? "text-brand-deep" : "text-brand-silver/80")}>
+                ({count})
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       <AdminListDetailGrid
         showSidePanel={panel.showSidePanel}
         list={
           <DataTable
             columns={[
               { key: "title", label: "Title" },
-              { key: "location", label: "Location" },
-              { key: "status", label: "Status" },
+              { key: "location", label: "Location", render: (e) => e.location || "—" },
+              ...(statusFilter === "all"
+                ? [
+                    {
+                      key: "status" as const,
+                      label: "Status",
+                      render: (e: Event) => STATUS_LABELS[e.status] ?? e.status,
+                    },
+                  ]
+                : []),
               { key: "startDate", label: "Date", render: (e) => new Date(e.startDate).toLocaleDateString() },
             ]}
-            data={events}
+            data={filteredEvents}
             onEdit={panel.openView}
             onDelete={handleDelete}
             selectedRowId={panel.activeRowId}

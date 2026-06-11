@@ -1,13 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+import { Send } from "lucide-react";
 import { DataTable } from "@/components/admin/DataTable";
-import { AdminDetailPanel, AdminPageHeader, AdminPanelBreadcrumb } from "@/components/admin/AdminPageHeader";
+import { FormField, inputClass } from "@/components/admin/AdminForm";
+import { AdminDetailModal, AdminDetailPanel, AdminPageHeader, AdminPanelBreadcrumb } from "@/components/admin/AdminPageHeader";
 import { AdminListDetailGrid } from "@/components/admin/AdminListDetailGrid";
 import { ADMIN_PANEL_CLASS } from "@/lib/admin-panel";
 import { useConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { Button } from "@/components/ui/Button";
 import { formatDate } from "@/lib/utils";
+import { isRichTextEmpty } from "@/lib/newsletter-mail";
+
+const RichTextEditor = dynamic(
+  () => import("@/components/admin/RichTextEditor").then((m) => m.RichTextEditor),
+  { ssr: false, loading: () => <div className="h-[320px] border border-gray-200 rounded-sm bg-brand-gray/30 animate-pulse" /> }
+);
 
 interface Subscriber {
   id: string;
@@ -16,6 +25,13 @@ interface Subscriber {
   isActive: boolean;
   subscribedAt: string;
   unsubscribedAt: string | null;
+}
+
+interface SendResult {
+  sent: number;
+  failed: number;
+  total: number;
+  errors?: { email: string; error: string }[];
 }
 
 function StatusBadge({ isActive }: { isActive: boolean }) {
@@ -34,6 +50,12 @@ export default function AdminNewsletterPage() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
   const [selected, setSelected] = useState<Subscriber | null>(null);
+  const [showCompose, setShowCompose] = useState(false);
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [sendError, setSendError] = useState("");
+  const [sendResult, setSendResult] = useState<SendResult | null>(null);
+  const [sending, setSending] = useState(false);
   const { confirm, ConfirmDialogHost } = useConfirmDialog();
 
   const loadSubscribers = useCallback(() => {
@@ -55,6 +77,21 @@ export default function AdminNewsletterPage() {
   }, [subscribers, filter]);
 
   const activeCount = subscribers.filter((s) => s.isActive).length;
+
+  const openCompose = () => {
+    setSubject("");
+    setMessage("");
+    setSendError("");
+    setSendResult(null);
+    setShowCompose(true);
+  };
+
+  const closeCompose = () => {
+    if (sending) return;
+    setShowCompose(false);
+    setSendError("");
+    setSendResult(null);
+  };
 
   const toggleActive = async (item: Subscriber) => {
     const res = await fetch(`/api/admin/newsletter/${item.id}`, {
@@ -84,12 +121,69 @@ export default function AdminNewsletterPage() {
     }
   };
 
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!subject.trim()) {
+      setSendError("Subject is required.");
+      return;
+    }
+    if (isRichTextEmpty(message)) {
+      setSendError("Message is required.");
+      return;
+    }
+
+    if (activeCount === 0) {
+      setSendError("No active subscribers to send to.");
+      return;
+    }
+
+    const ok = await confirm({
+      title: "Send newsletter",
+      message: `Send this newsletter to ${activeCount} active subscriber${activeCount === 1 ? "" : "s"}?`,
+      confirmLabel: "Send",
+    });
+    if (!ok) return;
+
+    setSending(true);
+    setSendError("");
+    setSendResult(null);
+
+    try {
+      const res = await fetch("/api/admin/newsletter/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject: subject.trim(), message: message.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to send newsletter.");
+
+      setSendResult({
+        sent: data.sent,
+        failed: data.failed,
+        total: data.total,
+        errors: data.errors,
+      });
+      setSubject("");
+      setMessage("");
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : "Failed to send newsletter.");
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
     <div>
       <ConfirmDialogHost />
       <AdminPageHeader
         title="Newsletter"
         description={`${activeCount} active subscriber${activeCount === 1 ? "" : "s"}`}
+        action={
+          <Button type="button" onClick={openCompose}>
+            <Send className="w-4 h-4 mr-2" />
+            Compose Newsletter
+          </Button>
+        }
       />
 
       <div className="flex flex-wrap gap-2 mb-4">
@@ -194,6 +288,88 @@ export default function AdminNewsletterPage() {
           )
         }
       />
+
+      <AdminDetailModal
+        open={showCompose}
+        onClose={closeCompose}
+        title="Compose Newsletter"
+        subtitle={
+          <p className="text-sm text-brand-silver mt-1">
+            Will be sent to {activeCount} active subscriber{activeCount === 1 ? "" : "s"}.
+            {activeCount === 0 && " Add subscribers before sending."}
+          </p>
+        }
+        wide
+      >
+        {sendResult ? (
+          <div className="space-y-4">
+            <div className="rounded-sm border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+              Newsletter sent to {sendResult.sent} of {sendResult.total} subscriber
+              {sendResult.total === 1 ? "" : "s"}.
+              {sendResult.failed > 0 && ` ${sendResult.failed} failed.`}
+            </div>
+            {sendResult.errors && sendResult.errors.length > 0 && (
+              <div className="rounded-sm border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                <p className="font-medium mb-2">Failed deliveries</p>
+                <ul className="space-y-1">
+                  {sendResult.errors.map((item) => (
+                    <li key={item.email}>
+                      {item.email}: {item.error}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <div className="flex gap-3 pt-2">
+              <Button type="button" onClick={openCompose}>
+                Compose Another
+              </Button>
+              <Button type="button" variant="ghost" onClick={closeCompose}>
+                Close
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSend} className="space-y-4">
+            {sendError && (
+              <div className="bg-red-50 text-red-700 text-sm p-3 rounded-sm border border-red-200">
+                {sendError}
+              </div>
+            )}
+
+            <FormField label="Subject" required>
+              <input
+                className={inputClass}
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="Newsletter subject"
+                required
+              />
+            </FormField>
+
+            <FormField label="Message" required>
+              <RichTextEditor
+                value={message}
+                onChange={setMessage}
+                placeholder="Write your newsletter content..."
+              />
+            </FormField>
+
+            <p className="text-xs text-brand-silver">
+              Emails are sent individually to protect subscriber privacy. Configure SMTP in Admin &gt; Settings before sending.
+            </p>
+
+            <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2 border-t border-gray-100">
+              <Button type="button" variant="ghost" onClick={closeCompose} disabled={sending}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={sending || activeCount === 0}>
+                {sending ? "Sending..." : `Send to ${activeCount} subscriber${activeCount === 1 ? "" : "s"}`}
+              </Button>
+            </div>
+          </form>
+        )}
+      </AdminDetailModal>
     </div>
   );
 }

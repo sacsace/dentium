@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
+import { normalizeSmtpHost } from "@/lib/mail";
 
 const SETTINGS_FIELDS = [
   "siteName", "tagline", "aboutTitle", "aboutContent", "aboutMission", "aboutVision",
@@ -41,6 +42,10 @@ export async function PUT(req: NextRequest) {
 
   if (typeof data.smtpPass === "string" && data.smtpPass.trim()) {
     update.smtpPass = data.smtpPass.trim();
+  }
+
+  if (typeof update.smtpHost === "string" && update.smtpHost.trim()) {
+    update.smtpHost = normalizeSmtpHost(update.smtpHost);
   }
 
   const settings = await prisma.siteSettings.upsert({

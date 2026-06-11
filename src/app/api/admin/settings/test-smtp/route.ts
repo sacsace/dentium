@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
-import { testSmtpConnection } from "@/lib/mail";
+import { testSmtpConnection, formatSmtpError } from "@/lib/mail";
 
 export async function POST() {
   const session = await requireAdmin();
@@ -10,7 +10,7 @@ export async function POST() {
     await testSmtpConnection();
     return NextResponse.json({ success: true });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "SMTP connection failed";
+    const msg = formatSmtpError(err);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

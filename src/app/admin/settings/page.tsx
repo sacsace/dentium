@@ -222,6 +222,10 @@ export default function AdminSettingsPage() {
               </div>
               <FormField label="SMTP Host">
                 <input className={inputClass} placeholder="smtp.gmail.com" value={form.smtpHost} onChange={(e) => setForm({ ...form, smtpHost: e.target.value })} />
+                <p className="text-xs text-brand-silver mt-1">Gmail: use <span className="font-mono">smtp.gmail.com</span>, port 587, SSL off, App Password.</p>
+                {form.smtpHost.trim().toLowerCase() === "smtp.google.com" && (
+                  <p className="text-xs text-amber-700 mt-1">Use <span className="font-mono">smtp.gmail.com</span> instead of smtp.google.com.</p>
+                )}
               </FormField>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField label="SMTP Port">

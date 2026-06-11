@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import { Plus } from "lucide-react";
+import { FileText, Layers, Newspaper, Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { DataTable } from "@/components/admin/DataTable";
 import { AdminInlineForm, FormField, inputClass } from "@/components/admin/AdminForm";
@@ -13,6 +13,7 @@ import { useConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { FeaturedImageField } from "@/components/admin/ImageUploadField";
 import { useAdminListPanel } from "@/hooks/useAdminListPanel";
 import { ADMIN_PANEL_CLASS, buildAdminBreadcrumbItems } from "@/lib/admin-panel";
+import { cn } from "@/lib/utils";
 
 const RichTextEditor = dynamic(
   () => import("@/components/admin/RichTextEditor").then((m) => m.RichTextEditor),
@@ -165,8 +166,17 @@ async function fetchPostDetail(id: string): Promise<PostDetail | null> {
   return data;
 }
 
+type TypeFilter = "all" | "BLOG" | "NEWS";
+
+const TYPE_TABS: { key: TypeFilter; label: string; icon: typeof Layers }[] = [
+  { key: "all", label: "All", icon: Layers },
+  { key: "BLOG", label: "Blog", icon: FileText },
+  { key: "NEWS", label: "News", icon: Newspaper },
+];
+
 export default function AdminPostsPage() {
   const [posts, setPosts] = useState<Post[]>([]);
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [loading, setLoading] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -183,8 +193,25 @@ export default function AdminPostsPage() {
     fetchData();
   }, []);
 
+  const filteredPosts = useMemo(() => {
+    if (typeFilter === "all") return posts;
+    return posts.filter((post) => post.type === typeFilter);
+  }, [posts, typeFilter]);
+
+  const typeCounts = useMemo(
+    () => ({
+      all: posts.length,
+      BLOG: posts.filter((post) => post.type === "BLOG").length,
+      NEWS: posts.filter((post) => post.type === "NEWS").length,
+    }),
+    [posts]
+  );
+
   const openCreate = () => {
-    setForm(EMPTY_FORM);
+    setForm({
+      ...EMPTY_FORM,
+      type: typeFilter === "NEWS" ? "NEWS" : "BLOG",
+    });
     setFormLoading(false);
     setEditorKey((k) => k + 1);
     panel.openCreate();
@@ -272,17 +299,51 @@ export default function AdminPostsPage() {
         }
       />
 
+      <div className="flex border-b border-gray-200 mb-4">
+        {TYPE_TABS.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = typeFilter === tab.key;
+          const count = typeCounts[tab.key];
+
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setTypeFilter(tab.key)}
+              className={cn(
+                "inline-flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 -mb-px transition-colors",
+                isActive
+                  ? "border-brand-accent text-brand-navy"
+                  : "border-transparent text-brand-silver hover:text-brand-navy"
+              )}
+            >
+              <Icon className="w-4 h-4" />
+              {tab.label}
+              <span className={cn("text-xs tabular-nums", isActive ? "text-brand-deep" : "text-brand-silver/80")}>
+                ({count})
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       <AdminListDetailGrid
         showSidePanel={panel.showSidePanel}
         list={
           <DataTable
             columns={[
               { key: "title", label: "Title" },
-              { key: "type", label: "Type" },
-              { key: "status", label: "Status" },
+              ...(typeFilter === "all"
+                ? [{ key: "type" as const, label: "Type", render: (p: Post) => TYPE_LABELS[p.type] ?? p.type }]
+                : []),
+              {
+                key: "status",
+                label: "Status",
+                render: (p) => STATUS_LABELS[p.status] ?? p.status,
+              },
               { key: "isFeatured", label: "Featured", render: (p) => (p.isFeatured ? "Yes" : "No") },
             ]}
-            data={posts}
+            data={filteredPosts}
             onEdit={panel.openView}
             onDelete={handleDelete}
             selectedRowId={panel.activeRowId}

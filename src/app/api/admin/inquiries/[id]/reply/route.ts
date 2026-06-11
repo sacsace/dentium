@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
-import { sendMail } from "@/lib/mail";
+import { sendMail, formatSmtpError } from "@/lib/mail";
 import { InquiryStatus } from "@prisma/client";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
       text: message.trim(),
     });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Failed to send email";
+    const msg = formatSmtpError(err);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 
