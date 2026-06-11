@@ -23,6 +23,7 @@ export function ProductCard({ product, isLoggedIn = false, fromShop, shopFilters
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     if (!isLoggedIn) return;
     addItem({
       productId: product.id,
@@ -36,45 +37,52 @@ export function ProductCard({ product, isLoggedIn = false, fromShop, shopFilters
   const priceLabel = getProductPriceLabel(product, isLoggedIn);
 
   return (
-    <Link href={productHref} className="group block bg-white rounded-sm overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500">
+    <div className="group bg-white rounded-sm overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500">
       <div className="relative aspect-square bg-brand-light overflow-hidden">
-        {product.images[0] && (
-          <Image src={product.images[0]} alt={product.name} fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
-        )}
+        <Link href={productHref} className="block w-full h-full">
+          {product.images[0] && (
+            <Image src={product.images[0]} alt={product.name} fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
+          )}
+        </Link>
         {product.isNew && (
-          <span className="absolute top-3 left-3 bg-brand-deep text-white text-xs px-2 py-1 rounded-sm flex items-center gap-1">
+          <span className="pointer-events-none absolute top-3 left-3 bg-brand-deep text-white text-xs px-2 py-1 rounded-sm flex items-center gap-1">
             <Sparkles className="w-3 h-3" /> New
           </span>
         )}
         {isLoggedIn && (
           <button
+            type="button"
             onClick={handleAddToCart}
-            className="absolute bottom-3 right-3 p-2.5 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-brand-accent hover:text-brand-navy"
+            className="absolute bottom-3 right-3 p-2.5 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-brand-accent hover:text-brand-navy z-10"
+            aria-label={`Add ${product.name} to cart`}
           >
             <ShoppingCart className="w-4 h-4" />
           </button>
         )}
       </div>
+
       <div className="p-5">
-        {product.brand && (
-          <p className="text-brand-silver text-xs uppercase tracking-wider mb-1">{product.brand}</p>
-        )}
-        <h3 className="font-semibold text-brand-navy mb-1 group-hover:text-brand-deep transition-colors">{product.name}</h3>
-        {product.shortDesc && (
-          <p className="text-brand-silver text-sm mb-3 line-clamp-2">{product.shortDesc}</p>
-        )}
-        {!isLoggedIn ? (
+        <Link href={productHref} className="block">
+          {product.brand && (
+            <p className="text-brand-silver text-xs uppercase tracking-wider mb-1">{product.brand}</p>
+          )}
+          <h3 className="font-semibold text-brand-navy mb-1 group-hover:text-brand-deep transition-colors">{product.name}</h3>
+          {product.shortDesc && (
+            <p className="text-brand-silver text-sm mb-3 line-clamp-2">{product.shortDesc}</p>
+          )}
+        </Link>
+
+        {isLoggedIn ? (
+          <p className="text-brand-deep font-medium text-sm">{priceLabel}</p>
+        ) : (
           <Link
             href="/auth/login"
-            onClick={(e) => e.stopPropagation()}
             className="inline-flex items-center gap-1.5 text-brand-deep font-medium text-sm hover:underline"
           >
             <LogIn className="w-3.5 h-3.5" /> Login for Price
           </Link>
-        ) : (
-          <p className="text-brand-deep font-medium text-sm">{priceLabel}</p>
         )}
       </div>
-    </Link>
+    </div>
   );
 }

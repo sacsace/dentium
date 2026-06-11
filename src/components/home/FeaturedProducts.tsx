@@ -4,20 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Sparkles, LogIn } from "lucide-react";
 import { AnimatedSection } from "@/components/ui/AnimatedSection";
-import { getProductPriceLabel } from "@/lib/product-client";
+import { getProductPriceLabel, type ClientProduct } from "@/lib/product-client";
 
-interface Product {
-  id: string;
-  name: string;
-  slug: string;
-  shortDesc?: string | null;
-  images: string[];
-  price: unknown;
-  showPrice: boolean;
-  isNew: boolean;
-}
-
-export function FeaturedProducts({ products, isLoggedIn = false }: { products: Product[]; isLoggedIn?: boolean }) {
+export function FeaturedProducts({ products, isLoggedIn = false }: { products: ClientProduct[]; isLoggedIn?: boolean }) {
   return (
     <section className="py-24 bg-brand-gray">
       <div className="container mx-auto px-4 lg:px-8">
@@ -56,10 +45,7 @@ export function FeaturedProducts({ products, isLoggedIn = false }: { products: P
                     </span>
                   ) : (
                     <p className="text-brand-deep font-medium text-sm">
-                      {getProductPriceLabel(
-                        { price: product.price != null ? Number(product.price) : null },
-                        true
-                      )}
+                      {getProductPriceLabel(product, isLoggedIn)}
                     </p>
                   )}
                 </div>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { toClientProduct } from "@/lib/product-client";
 import { HeroBanner } from "@/components/home/HeroBanner";
 import { StatsSection } from "@/components/home/StatsSection";
 import { ProductCategories } from "@/components/home/ProductCategories";
@@ -66,7 +67,9 @@ export default async function HomePage() {
       <StatsSection />
       {data.categories.length > 0 && <ProductCategories categories={data.categories} />}
       <ParallaxBreak />
-      {data.products.length > 0 && <FeaturedProducts products={data.products} isLoggedIn={!!session} />}
+      {data.products.length > 0 && (
+        <FeaturedProducts products={data.products.map(toClientProduct)} isLoggedIn={!!session} />
+      )}
       {data.events.length > 0 && <EventsSection events={data.events} />}
       {data.studyPosts.length > 0 ? (
         <DentalStudySection items={data.studyPosts} />
