@@ -3,16 +3,11 @@
 import { ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useCartStore } from "@/store/cart";
+import type { ClientProduct } from "@/lib/product-client";
+import { getCartUnitPrice } from "@/lib/product-client";
 
 interface Props {
-  product: {
-    id: string;
-    name: string;
-    slug: string;
-    images: string[];
-    price: unknown;
-    showPrice: boolean;
-  };
+  product: Pick<ClientProduct, "id" | "name" | "slug" | "images" | "price" | "showPrice">;
 }
 
 export function AddToCartButton({ product }: Props) {
@@ -26,7 +21,7 @@ export function AddToCartButton({ product }: Props) {
           name: product.name,
           slug: product.slug,
           image: product.images[0] || "",
-          price: product.showPrice ? Number(product.price) : null,
+          price: getCartUnitPrice(product, true),
         })
       }
     >

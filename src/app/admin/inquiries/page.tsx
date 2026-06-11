@@ -4,7 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import { DataTable } from "@/components/admin/DataTable";
 import { FormField, inputClass } from "@/components/admin/AdminForm";
 import { Button } from "@/components/ui/Button";
-import { X } from "lucide-react";
+import { AdminDetailPanel, AdminPageHeader, AdminPanelBreadcrumb } from "@/components/admin/AdminPageHeader";
+import { AdminListDetailGrid } from "@/components/admin/AdminListDetailGrid";
+import { ADMIN_PANEL_CLASS } from "@/lib/admin-panel";
 
 type InquiryStatus = "PENDING" | "CONFIRMED" | "COMPLETED";
 
@@ -45,7 +47,7 @@ function StatusBadge({ status }: { status: InquiryStatus }) {
 export default function AdminInquiriesPage() {
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [selected, setSelected] = useState<Inquiry | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
   const [replySubject, setReplySubject] = useState("");
   const [replyMessage, setReplyMessage] = useState("");
   const [replyError, setReplyError] = useState("");
@@ -59,8 +61,15 @@ export default function AdminInquiriesPage() {
     loadInquiries();
   }, [loadInquiries]);
 
+  const closeDetail = () => {
+    setSelected(null);
+    setReplyError("");
+    setReplyMessage("");
+  };
+
   const openInquiry = async (item: Inquiry) => {
-    setLoading(true);
+    setSelected(item);
+    setLoadingDetail(true);
     setReplyError("");
     setReplyMessage("");
     try {
@@ -75,14 +84,8 @@ export default function AdminInquiriesPage() {
     } catch {
       setReplyError("Failed to load inquiry details.");
     } finally {
-      setLoading(false);
+      setLoadingDetail(false);
     }
-  };
-
-  const closeModal = () => {
-    setSelected(null);
-    setReplyError("");
-    setReplyMessage("");
   };
 
   const handleReply = async (e: React.FormEvent) => {
@@ -110,149 +113,164 @@ export default function AdminInquiriesPage() {
     }
   };
 
+  const itemLabel = selected?.subject || selected?.name || "Inquiry Details";
+
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-brand-navy mb-6">Contact Inquiries</h1>
-      <DataTable
-        columns={[
-          { key: "name", label: "Name" },
-          { key: "email", label: "Email" },
-          { key: "subject", label: "Subject", render: (i) => i.subject || "—" },
-          { key: "type", label: "Type" },
-          {
-            key: "status",
-            label: "Status",
-            render: (i) => <StatusBadge status={i.status} />,
-          },
-          {
-            key: "createdAt",
-            label: "Date",
-            render: (i) => new Date(i.createdAt).toLocaleDateString(),
-          },
-        ]}
-        data={inquiries}
-        onRowClick={openInquiry}
-        onEdit={openInquiry}
-        editLabel="View"
-      />
+      <AdminPageHeader title="Contact Inquiries" />
 
-      {selected && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-sm w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b">
-              <div>
-                <h2 className="text-lg font-semibold text-brand-navy">Inquiry Details</h2>
-                <StatusBadge status={selected.status} />
-              </div>
-              <button onClick={closeModal} className="text-brand-silver hover:text-brand-dark">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              {loading ? (
-                <p className="text-sm text-brand-silver">Loading...</p>
-              ) : (
-                <>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-brand-silver">Name</span>
-                      <p className="font-medium text-brand-navy">{selected.name}</p>
-                    </div>
-                    <div>
-                      <span className="text-brand-silver">Email</span>
-                      <p className="font-medium text-brand-navy">{selected.email}</p>
-                    </div>
-                    {selected.phone && (
-                      <div>
-                        <span className="text-brand-silver">Phone</span>
-                        <p className="font-medium text-brand-navy">{selected.phone}</p>
-                      </div>
-                    )}
-                    {selected.company && (
-                      <div>
-                        <span className="text-brand-silver">Company</span>
-                        <p className="font-medium text-brand-navy">{selected.company}</p>
-                      </div>
-                    )}
-                    <div>
-                      <span className="text-brand-silver">Type</span>
-                      <p className="font-medium text-brand-navy">{selected.type}</p>
-                    </div>
-                    <div>
-                      <span className="text-brand-silver">Date</span>
-                      <p className="font-medium text-brand-navy">
-                        {new Date(selected.createdAt).toLocaleString()}
-                      </p>
-                    </div>
+      <AdminListDetailGrid
+        showSidePanel={Boolean(selected)}
+        list={
+          <DataTable
+            columns={[
+              { key: "name", label: "Name" },
+              { key: "email", label: "Email" },
+              { key: "subject", label: "Subject", render: (i) => i.subject || "—" },
+              { key: "type", label: "Type" },
+              {
+                key: "status",
+                label: "Status",
+                render: (i) => <StatusBadge status={i.status} />,
+              },
+              {
+                key: "createdAt",
+                label: "Date",
+                render: (i) => new Date(i.createdAt).toLocaleDateString(),
+              },
+            ]}
+            data={inquiries}
+            onRowClick={openInquiry}
+            selectedRowId={selected?.id ?? null}
+          />
+        }
+        panel={
+          selected && (
+            <AdminDetailPanel
+              title="Inquiry Details"
+              subtitle={
+                <div className="mt-1">
+                  <StatusBadge status={selected.status} />
+                </div>
+              }
+              loading={loadingDetail}
+              onClose={closeDetail}
+              className={ADMIN_PANEL_CLASS}
+              breadcrumb={
+                <AdminPanelBreadcrumb
+                  items={[
+                    { id: "list", label: "Contact Inquiries" },
+                    { id: "view", label: itemLabel },
+                  ]}
+                  onNavigate={(id) => id === "list" && closeDetail()}
+                />
+              }
+            >
+              <div className="space-y-4">
+                {replyError && !loadingDetail && (
+                  <div className="bg-red-50 text-red-700 text-sm p-3 rounded-sm">
+                    {replyError}
                   </div>
+                )}
 
-                  {selected.subject && (
-                    <div>
-                      <span className="text-sm text-brand-silver">Subject</span>
-                      <p className="font-medium text-brand-navy">{selected.subject}</p>
-                    </div>
-                  )}
-
+                <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-sm text-brand-silver">Message</span>
-                    <div className="mt-1 p-4 bg-brand-gray rounded-sm text-sm text-brand-dark whitespace-pre-wrap">
-                      {selected.message}
+                    <span className="text-brand-silver">Name</span>
+                    <p className="font-medium text-brand-navy">{selected.name}</p>
+                  </div>
+                  <div>
+                    <span className="text-brand-silver">Email</span>
+                    <p className="font-medium text-brand-navy">{selected.email}</p>
+                  </div>
+                  {selected.phone && (
+                    <div>
+                      <span className="text-brand-silver">Phone</span>
+                      <p className="font-medium text-brand-navy">{selected.phone}</p>
+                    </div>
+                  )}
+                  {selected.company && (
+                    <div>
+                      <span className="text-brand-silver">Company</span>
+                      <p className="font-medium text-brand-navy">{selected.company}</p>
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-brand-silver">Type</span>
+                    <p className="font-medium text-brand-navy">{selected.type}</p>
+                  </div>
+                  <div>
+                    <span className="text-brand-silver">Date</span>
+                    <p className="font-medium text-brand-navy">
+                      {new Date(selected.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+
+                {selected.subject && (
+                  <div>
+                    <span className="text-sm text-brand-silver">Subject</span>
+                    <p className="font-medium text-brand-navy">{selected.subject}</p>
+                  </div>
+                )}
+
+                <div>
+                  <span className="text-sm text-brand-silver">Message</span>
+                  <div className="mt-1 p-4 bg-brand-gray rounded-sm text-sm text-brand-dark whitespace-pre-wrap">
+                    {selected.message}
+                  </div>
+                </div>
+
+                {selected.adminReply && (
+                  <div>
+                    <span className="text-sm text-brand-silver">
+                      Sent Reply
+                      {selected.repliedAt && (
+                        <span className="ml-2">
+                          ({new Date(selected.repliedAt).toLocaleString()})
+                        </span>
+                      )}
+                    </span>
+                    <div className="mt-1 p-4 bg-green-50 rounded-sm text-sm text-brand-dark whitespace-pre-wrap">
+                      {selected.adminReply}
                     </div>
                   </div>
+                )}
 
-                  {selected.adminReply && (
-                    <div>
-                      <span className="text-sm text-brand-silver">
-                        Sent Reply
-                        {selected.repliedAt && (
-                          <span className="ml-2">
-                            ({new Date(selected.repliedAt).toLocaleString()})
-                          </span>
-                        )}
-                      </span>
-                      <div className="mt-1 p-4 bg-green-50 rounded-sm text-sm text-brand-dark whitespace-pre-wrap">
-                        {selected.adminReply}
+                {selected.status !== "COMPLETED" && (
+                  <form onSubmit={handleReply} className="border-t pt-4 space-y-4">
+                    <h3 className="font-semibold text-brand-navy">Reply by Email</h3>
+                    {replyError && (
+                      <div className="bg-red-50 text-red-700 text-sm p-3 rounded-sm">
+                        {replyError}
                       </div>
-                    </div>
-                  )}
-
-                  {selected.status !== "COMPLETED" && (
-                    <form onSubmit={handleReply} className="border-t pt-4 space-y-4">
-                      <h3 className="font-semibold text-brand-navy">Reply by Email</h3>
-                      {replyError && (
-                        <div className="bg-red-50 text-red-700 text-sm p-3 rounded-sm">
-                          {replyError}
-                        </div>
-                      )}
-                      <FormField label="Subject">
-                        <input
-                          className={inputClass}
-                          value={replySubject}
-                          onChange={(e) => setReplySubject(e.target.value)}
-                        />
-                      </FormField>
-                      <FormField label="Message">
-                        <textarea
-                          className={inputClass}
-                          rows={6}
-                          value={replyMessage}
-                          onChange={(e) => setReplyMessage(e.target.value)}
-                          placeholder="Write your reply..."
-                          required
-                        />
-                      </FormField>
-                      <Button type="submit" disabled={replySending}>
-                        {replySending ? "Sending..." : "Send Reply & Mark Complete"}
-                      </Button>
-                    </form>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+                    )}
+                    <FormField label="Subject">
+                      <input
+                        className={inputClass}
+                        value={replySubject}
+                        onChange={(e) => setReplySubject(e.target.value)}
+                      />
+                    </FormField>
+                    <FormField label="Message">
+                      <textarea
+                        className={inputClass}
+                        rows={6}
+                        value={replyMessage}
+                        onChange={(e) => setReplyMessage(e.target.value)}
+                        placeholder="Write your reply..."
+                        required
+                      />
+                    </FormField>
+                    <Button type="submit" disabled={replySending}>
+                      {replySending ? "Sending..." : "Send Reply & Mark Complete"}
+                    </Button>
+                  </form>
+                )}
+              </div>
+            </AdminDetailPanel>
+          )
+        }
+      />
     </div>
   );
 }

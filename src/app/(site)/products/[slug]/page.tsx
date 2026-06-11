@@ -4,17 +4,19 @@ import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { formatPrice } from "@/lib/utils";
 import { ProductCard } from "@/components/products/ProductCard";
 import { AddToCartButton } from "@/components/products/AddToCartButton";
 import { RequestQuoteButton } from "@/components/products/RequestQuoteButton";
+import { toClientProduct, getProductPriceLabel } from "@/lib/product-client";
+import { getShopBackHref, type ShopFilterParams } from "@/lib/shop-navigation";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { buildMetadata } from "@/lib/seo";
 import { breadcrumbSchema, productSchema } from "@/lib/seo-schemas";
-import { Check } from "lucide-react";
+import { Check, LogIn, ArrowLeft } from "lucide-react";
 
 interface Props {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<ShopFilterParams & { from?: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -33,9 +35,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default async function ProductDetailPage({ params }: Props) {
+export default async function ProductDetailPage({ params, searchParams }: Props) {
   const { slug } = await params;
+  const query = await searchParams;
   const session = await getSession();
+  const backHref = getShopBackHref(query);
 
   let product = null;
   let related: Awaited<ReturnType<typeof prisma.product.findMany>> = [];
@@ -59,6 +63,9 @@ export default async function ProductDetailPage({ params }: Props) {
 
   const specs = product.specifications as Record<string, string> | null;
 
+  const clientProduct = toClientProduct(product);
+  const priceLabel = getProductPriceLabel(clientProduct, Boolean(session));
+
   return (
     <>
       <JsonLd
@@ -73,6 +80,10 @@ export default async function ProductDetailPage({ params }: Props) {
       />
       <section className="pt-28 pb-16">
         <div className="container mx-auto px-4 lg:px-8">
+          <Link href={backHref} className="inline-flex items-center gap-2 text-brand-deep text-sm mb-8 hover:gap-3 transition-all">
+            <ArrowLeft className="w-4 h-4" /> Back to Shop
+          </Link>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             <div className="relative aspect-square bg-brand-light rounded-sm overflow-hidden">
               {product.images[0] && (
@@ -91,18 +102,20 @@ export default async function ProductDetailPage({ params }: Props) {
                 <p className="text-brand-silver text-lg mb-6">{product.shortDesc}</p>
               )}
               {session ? (
-                <p className="text-2xl font-semibold text-brand-deep mb-8">
-                  {product.showPrice ? formatPrice(Number(product.price)) : "Price on request"}
-                </p>
+                <p className="text-2xl font-semibold text-brand-deep mb-8">{priceLabel}</p>
               ) : (
-                <Link href="/auth/login" className="inline-block text-2xl font-semibold text-brand-deep mb-8 hover:underline">
+                <Link
+                  href="/auth/login"
+                  className="inline-flex items-center gap-2 text-2xl font-semibold text-brand-deep mb-8 hover:underline"
+                >
+                  <LogIn className="w-5 h-5" />
                   Login for Price
                 </Link>
               )}
 
               {session && (
               <div className="flex flex-wrap gap-3 mb-8">
-                <AddToCartButton product={product} />
+                <AddToCartButton product={clientProduct} />
                 <RequestQuoteButton productId={product.id} productName={product.name} />
               </div>
               )}
@@ -172,7 +185,7 @@ export default async function ProductDetailPage({ params }: Props) {
               <h2 className="font-display text-2xl font-semibold text-brand-navy mb-8">Related Products</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {related.map((p) => (
-                  <ProductCard key={p.id} product={p} isLoggedIn={!!session} />
+                  <ProductCard key={p.id} product={toClientProduct(p)} isLoggedIn={!!session} />
                 ))}
               </div>
             </div>

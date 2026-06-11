@@ -415,3 +415,33 @@ model GalleryImage {
   @@index([isActive, sortOrder])
   @@index([category])
 }
+
+model CompanyHistory {
+  id          String   @id @default(cuid())
+  year        Int
+  title       String
+  description String?  @db.Text
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive, sortOrder, year])
+}
+
+model TeamMember {
+  id         String   @id @default(cuid())
+  name       String
+  role       String
+  department String?
+  bio        String?  @db.Text
+  photoUrl   String
+  photoFocalX Float   @default(50)
+  photoFocalY Float   @default(38)
+  sortOrder  Int      @default(0)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}

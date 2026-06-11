@@ -20,9 +20,12 @@ import {
   Globe,
   BarChart3,
   Briefcase,
+  History,
+  UserCircle,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { clearCartOnLogout } from "@/components/cart/CartAuthSync";
 import { DentiumLogo } from "@/components/brand/DentiumLogo";
 
 const menuItems = [
@@ -41,6 +44,8 @@ const menuItems = [
   { label: "Newsletter", href: "/admin/newsletter", icon: Mail },
   { label: "Resumes", href: "/admin/resumes", icon: Briefcase },
   { label: "Global Offices", href: "/admin/offices", icon: Globe },
+  { label: "Company History", href: "/admin/company-history", icon: History },
+  { label: "Team Members", href: "/admin/team-members", icon: UserCircle },
   { label: "Users", href: "/admin/users", icon: Users },
   { label: "Settings", href: "/admin/settings", icon: Settings },
 ];
@@ -55,6 +60,7 @@ export function AdminSidebar({ mobileOpen = false, onClose }: AdminSidebarProps)
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
+    clearCartOnLogout();
     window.location.href = "/auth/login";
   };
 

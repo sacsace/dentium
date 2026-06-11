@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Sparkles, LogIn } from "lucide-react";
 import { AnimatedSection } from "@/components/ui/AnimatedSection";
-import { formatPrice } from "@/lib/utils";
+import { getProductPriceLabel } from "@/lib/product-client";
 
 interface Product {
   id: string;
@@ -56,7 +56,10 @@ export function FeaturedProducts({ products, isLoggedIn = false }: { products: P
                     </span>
                   ) : (
                     <p className="text-brand-deep font-medium text-sm">
-                      {product.showPrice ? formatPrice(Number(product.price)) : "Price on request"}
+                      {getProductPriceLabel(
+                        { price: product.price != null ? Number(product.price) : null },
+                        true
+                      )}
                     </p>
                   )}
                 </div>

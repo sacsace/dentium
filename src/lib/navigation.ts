@@ -21,9 +21,10 @@ export const megaMenuItems: MegaMenuItem[] = [
     sections: [
       {
         links: [
-          { label: "Who We Are", href: "/about" },
-          { label: "Vision", href: "/about" },
-          { label: "Our Journey", href: "/about" },
+          { label: "Who We Are", href: "/about#overview" },
+          { label: "Vision", href: "/about#mission" },
+          { label: "Our Journey", href: "/about#our-journey" },
+          { label: "Our Team", href: "/our-team" },
           { label: "Careers", href: "/careers" },
         ],
       },

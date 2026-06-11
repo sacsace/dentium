@@ -6,7 +6,9 @@ import { FormField, inputClass } from "@/components/admin/AdminForm";
 import { Button } from "@/components/ui/Button";
 import { Search } from "lucide-react";
 import type { OrderStatus } from "@prisma/client";
-import { AdminDetailModal, AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { AdminDetailPanel, AdminPageHeader, AdminPanelBreadcrumb } from "@/components/admin/AdminPageHeader";
+import { AdminListDetailGrid } from "@/components/admin/AdminListDetailGrid";
+import { ADMIN_PANEL_CLASS } from "@/lib/admin-panel";
 import {
   formatOrderAmount,
   getCustomerEmail,
@@ -98,6 +100,8 @@ export default function AdminOrdersPage() {
     );
   }, [orders, activeTab, keyword]);
 
+  const closeDetail = () => setSelected(null);
+
   const openOrder = async (item: Order) => {
     setSelected(item);
     setEditStatus(item.status);
@@ -137,69 +141,87 @@ export default function AdminOrdersPage() {
     <div>
       <AdminPageHeader title="Orders" />
 
-      <div className="flex flex-wrap gap-2 mb-4 border-b border-gray-200">
-        {ORDER_TABS.map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
-              activeTab === tab
-                ? "border-brand-accent text-brand-navy"
-                : "border-transparent text-brand-silver hover:text-brand-dark"
-            }`}
-          >
-            {ORDER_TAB_LABELS[tab]}
-            <span className={`ml-2 px-1.5 py-0.5 rounded text-xs ${
-              activeTab === tab ? "bg-brand-accent/15 text-brand-navy" : "bg-brand-gray text-brand-silver"
-            }`}>
-              {tabCounts[tab]}
-            </span>
-          </button>
-        ))}
-      </div>
+      <AdminListDetailGrid
+        showSidePanel={Boolean(selected)}
+        list={
+          <>
+            <div className="flex flex-wrap gap-2 mb-4 border-b border-gray-200">
+              {ORDER_TABS.map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                    activeTab === tab
+                      ? "border-brand-accent text-brand-navy"
+                      : "border-transparent text-brand-silver hover:text-brand-dark"
+                  }`}
+                >
+                  {ORDER_TAB_LABELS[tab]}
+                  <span className={`ml-2 px-1.5 py-0.5 rounded text-xs ${
+                    activeTab === tab ? "bg-brand-accent/15 text-brand-navy" : "bg-brand-gray text-brand-silver"
+                  }`}>
+                    {tabCounts[tab]}
+                  </span>
+                </button>
+              ))}
+            </div>
 
-      <div className="bg-white rounded-sm shadow-sm border border-gray-100 p-4 mb-4">
-        <div className="relative max-w-xl">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-silver" />
-          <input
-            className={`${inputClass} pl-9`}
-            placeholder="Search order #, customer, email, phone, company, product..."
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-          />
-        </div>
-      </div>
+            <div className="bg-white rounded-sm shadow-sm border border-gray-100 p-4 mb-4">
+              <div className="relative max-w-xl">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-silver" />
+                <input
+                  className={`${inputClass} pl-9`}
+                  placeholder="Search order #, customer, email, phone, company, product..."
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                />
+              </div>
+            </div>
 
-      <DataTable
-        columns={[
-          { key: "orderNumber", label: "Order #" },
-          { key: "guestName", label: "Customer", render: (o) => getCustomerName(o) },
-          { key: "guestEmail", label: "Email", render: (o) => getCustomerEmail(o) },
-          { key: "status", label: "Status", render: (o) => <StatusBadge status={o.status} /> },
-          {
-            key: "totalAmount",
-            label: "Total",
-            render: (o) => formatOrderAmount(o.totalAmount),
-          },
-          { key: "createdAt", label: "Date", render: (o) => new Date(o.createdAt).toLocaleDateString() },
-        ]}
-        data={filteredOrders}
-        mobileTitleKey="orderNumber"
-        onRowClick={openOrder}
-      />
-
-      <AdminDetailModal
-        open={Boolean(selected)}
-        onClose={() => setSelected(null)}
-        wide
-        title={selected?.orderNumber ?? ""}
-        subtitle={selected ? <div className="mt-1"><StatusBadge status={selected.status} /></div> : undefined}
-      >
-        {loadingDetail ? (
-          <div className="h-40 animate-pulse bg-brand-gray/30 rounded-sm" />
-        ) : selected ? (
-          <div className="space-y-6">
+            <DataTable
+              columns={[
+                { key: "orderNumber", label: "Order #" },
+                { key: "guestName", label: "Customer", render: (o) => getCustomerName(o) },
+                { key: "guestEmail", label: "Email", render: (o) => getCustomerEmail(o) },
+                { key: "status", label: "Status", render: (o) => <StatusBadge status={o.status} /> },
+                {
+                  key: "totalAmount",
+                  label: "Total",
+                  render: (o) => formatOrderAmount(o.totalAmount),
+                },
+                { key: "createdAt", label: "Date", render: (o) => new Date(o.createdAt).toLocaleDateString() },
+              ]}
+              data={filteredOrders}
+              mobileTitleKey="orderNumber"
+              onRowClick={openOrder}
+              selectedRowId={selected?.id ?? null}
+            />
+          </>
+        }
+        panel={
+          selected && (
+            <AdminDetailPanel
+              title={selected.orderNumber}
+              subtitle={
+                <div className="mt-1">
+                  <StatusBadge status={selected.status} />
+                </div>
+              }
+              loading={loadingDetail}
+              onClose={closeDetail}
+              className={ADMIN_PANEL_CLASS}
+              breadcrumb={
+                <AdminPanelBreadcrumb
+                  items={[
+                    { id: "list", label: "Orders" },
+                    { id: "view", label: selected.orderNumber },
+                  ]}
+                  onNavigate={(id) => id === "list" && closeDetail()}
+                />
+              }
+            >
+              <div className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-brand-silver">Customer</span>
@@ -281,14 +303,16 @@ export default function AdminOrdersPage() {
                     <Button onClick={saveStatus} disabled={saving || editStatus === selected.status} className="w-full sm:w-auto">
                       {saving ? "Saving..." : "Save Status"}
                     </Button>
-                    <Button type="button" variant="ghost" onClick={() => setSelected(null)} className="w-full sm:w-auto">
+                    <Button type="button" variant="ghost" onClick={closeDetail} className="w-full sm:w-auto">
                       Close
                     </Button>
                   </div>
                 </div>
-          </div>
-        ) : null}
-      </AdminDetailModal>
+              </div>
+            </AdminDetailPanel>
+          )
+        }
+      />
     </div>
   );
 }

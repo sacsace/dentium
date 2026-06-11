@@ -4,6 +4,7 @@ import { ProductCard } from "@/components/products/ProductCard";
 import { AnimatedSection } from "@/components/ui/AnimatedSection";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { toClientProduct } from "@/lib/product-client";
 import Link from "next/link";
 
 export const metadata = staticPageMetadata("products");
@@ -93,7 +94,7 @@ export default async function ProductsPage({ searchParams }: Props) {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {products.map((product, i) => (
                 <AnimatedSection key={product.id} delay={i * 0.05}>
-                  <ProductCard product={product} isLoggedIn={!!session} />
+                  <ProductCard product={toClientProduct(product)} isLoggedIn={!!session} />
                 </AnimatedSection>
               ))}
             </div>

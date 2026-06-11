@@ -10,8 +10,19 @@ function createPrismaClient() {
   });
 }
 
+/** Models added after initial deploy — stale cached clients in dev omit these delegates */
+const REQUIRED_DELEGATES = [
+  "pageVisit",
+  "newsletterSubscriber",
+  "downloadResource",
+  "galleryImage",
+  "companyHistory",
+  "teamMember",
+] as const;
+
 function isClientStale(client: PrismaClient): boolean {
-  return typeof (client as { pageVisit?: { count?: unknown } }).pageVisit?.count !== "function";
+  const c = client as unknown as Record<string, { findMany?: unknown } | undefined>;
+  return REQUIRED_DELEGATES.some((key) => typeof c[key]?.findMany !== "function");
 }
 
 let prisma = globalForPrisma.prisma ?? createPrismaClient();

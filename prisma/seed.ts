@@ -434,6 +434,17 @@ async function main() {
     })),
   });
 
+  await prisma.companyHistory.deleteMany();
+  await prisma.companyHistory.createMany({
+    data: ABOUT_PAGE.history.map((entry, index) => ({
+      year: entry.year,
+      title: entry.title,
+      description: entry.description,
+      sortOrder: index,
+      isActive: true,
+    })),
+  });
+
   console.log("✅ Seeding completed!");
 }
 

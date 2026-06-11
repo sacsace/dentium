@@ -56,7 +56,45 @@ export const ABOUT_PAGE = {
     "At Dentium, we are dedicated to shaping the future of dentistry by developing innovative, high-quality dental implant systems, regenerative solutions, and digital workflows. Our mission is to empower dental professionals by providing them with clinically proven, reliable, and efficient solutions that simplify procedures while ensuring superior patient care.\n\nThrough continuous research and development, we remain at the forefront of technological advancements, collaborating with leading experts, universities, and research institutions worldwide. We are committed to education and knowledge sharing, offering comprehensive training programs, hands-on workshops, and global symposiums to support professional growth and excellence.\n\nAs a total solution provider, we strive to create an ecosystem where digital dentistry and implantology seamlessly integrate, making treatments more predictable, minimally invasive, and patient-centered. By maintaining the highest standards of quality and innovation, we aim to expand our global presence and become the most trusted name in dental solutions.",
   vision:
     "To be a global leader in dental innovation, transforming implantology and digital dentistry through cutting-edge solutions that enhance efficiency, accuracy, and patient care. We aim to set new industry standards by consistently delivering advanced technologies and education, equipping dental professionals with reliable tools to be the best for exceptional treatment outcomes.",
+  /** Default company timeline when none configured in admin */
+  history: [
+    {
+      year: 2000,
+      title: "Dentium Founded",
+      description:
+        "Dentium Co., Ltd. was founded in June 2000 with a vision to redefine the dental implant industry through innovation and clinical excellence.",
+    },
+    {
+      year: 2003,
+      title: "European CE Certification",
+      description:
+        "Achieved European CE certification, establishing international recognition for product quality and manufacturing standards.",
+    },
+    {
+      year: 2004,
+      title: "U.S. FDA Approval",
+      description: "Received U.S. FDA approval, expanding access to Dentium implant systems in the United States.",
+    },
+    {
+      year: 2010,
+      title: "Global Expansion",
+      description:
+        "Expanded training and distribution networks worldwide through the Dentium Implant Institute and international symposiums.",
+    },
+    {
+      year: 2020,
+      title: "Digital Dentistry Leadership",
+      description:
+        "Advanced digital dentistry workflows with CBCT software, guided surgery solutions, and integrated implant systems.",
+    },
+  ],
 } as const;
+
+export type CompanyHistoryEntry = {
+  year: number;
+  title: string;
+  description?: string | null;
+};
 
 export function aboutOverviewText(): string {
   return ABOUT_PAGE.overview.join("\n\n");

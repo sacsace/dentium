@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/Button";
 import { ChevronUp, ChevronDown, Download, ExternalLink } from "lucide-react";
 import { adminFileDownloadUrl } from "@/lib/admin-file-urls";
 import { useConfirmDialog } from "@/components/admin/ConfirmDialog";
-import { AdminDetailModal, AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { AdminDetailPanel, AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { cn } from "@/lib/utils";
 import {
   ATTACHMENT_LABELS,
   formatAppliedPosition,
@@ -81,6 +82,7 @@ function StatusBadge({ status }: { status: ResumeStatus }) {
 export default function AdminResumesPage() {
   const [resumes, setResumes] = useState<ResumeApplication[]>([]);
   const [selected, setSelected] = useState<ResumeApplication | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>("manual");
   const [statusFilter, setStatusFilter] = useState<ResumeStatus | "ALL">("ALL");
   const [experienceFilter, setExperienceFilter] = useState<ExperienceFilter>("ALL");
@@ -178,13 +180,24 @@ export default function AdminResumesPage() {
   };
 
   const openResume = async (item: ResumeApplication) => {
-    const res = await fetch(`/api/admin/resumes/${item.id}`);
-    const data = await res.json();
-    if (res.ok) {
-      setSelected(data);
-      setEditStatus(data.status);
-      setEditNotes(data.adminNotes ?? "");
+    setDetailLoading(true);
+    setSelected(null);
+    try {
+      const res = await fetch(`/api/admin/resumes/${item.id}`);
+      const data = await res.json();
+      if (res.ok) {
+        setSelected(data);
+        setEditStatus(data.status);
+        setEditNotes(data.adminNotes ?? "");
+      }
+    } finally {
+      setDetailLoading(false);
     }
+  };
+
+  const closeDetail = () => {
+    setSelected(null);
+    setDetailLoading(false);
   };
 
   const saveReview = async () => {
@@ -227,15 +240,19 @@ export default function AdminResumesPage() {
     });
     if (!ok) return;
     await fetch(`/api/admin/resumes/${item.id}`, { method: "DELETE" });
-    if (selected?.id === item.id) setSelected(null);
+    if (selected?.id === item.id) closeDetail();
     loadResumes();
   };
+
+  const showSidePanel = detailLoading || Boolean(selected);
 
   return (
     <div>
       <AdminPageHeader title="Resume Applications" />
 
-      <div className="bg-white rounded-sm shadow-sm border border-gray-100 p-4 mb-4 space-y-4">
+      <div className={cn("grid gap-6", showSidePanel && "xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]")}>
+        <div className="min-w-0 space-y-4">
+      <div className="bg-white rounded-sm shadow-sm border border-gray-100 p-4 space-y-4">
         <div className="flex flex-col lg:flex-row gap-3">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-silver" />
@@ -314,24 +331,50 @@ export default function AdminResumesPage() {
 
         <div className="flex flex-wrap items-center gap-3 text-sm text-brand-silver">
           <span>{filteredResumes.length} of {resumes.length} application(s)</span>
+          {!hasActiveFilters && (
+            <span className="text-xs">Click a row to view details</span>
+          )}
           {hasActiveFilters && sortMode === "manual" && (
             <span className="text-amber-700 text-xs">Manual reorder is disabled while filters are active</span>
           )}
         </div>
       </div>
 
-      <div className="md:hidden bg-white rounded-sm shadow-sm divide-y divide-gray-100">
+      <div className="md:hidden bg-white rounded-sm shadow-sm divide-y divide-gray-100 border border-gray-100">
         {filteredResumes.map((item) => (
-          <div key={item.id} className="p-4 space-y-2">
+          <div
+            key={item.id}
+            role="button"
+            tabIndex={0}
+            onClick={() => openResume(item)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                openResume(item);
+              }
+            }}
+            className={cn(
+              "p-4 space-y-2 cursor-pointer",
+              selected?.id === item.id ? "bg-brand-accent/10" : "hover:bg-brand-gray/40"
+            )}
+          >
             <div className="flex items-start justify-between gap-2">
               <p className="font-medium text-brand-navy">{item.name}</p>
               <StatusBadge status={item.status} />
             </div>
             <p className="text-sm text-brand-silver">{item.email}</p>
             <p className="text-xs text-brand-silver">{getJobCategoryLabel(item.positionCategory)} · {new Date(item.createdAt).toLocaleDateString()}</p>
-            <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => openResume(item)} className="text-brand-accent-dark text-sm font-medium">Review</button>
-              <button type="button" onClick={() => handleDelete(item)} className="text-red-500 text-sm font-medium">Delete</button>
+            <div className="flex gap-3 pt-2 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(item);
+                }}
+                className="text-red-500 text-sm font-medium"
+              >
+                Delete
+              </button>
             </div>
           </div>
         ))}
@@ -340,7 +383,7 @@ export default function AdminResumesPage() {
         )}
       </div>
 
-      <div className="hidden md:block bg-white rounded-sm shadow-sm overflow-hidden">
+      <div className="hidden md:block bg-white rounded-sm shadow-sm overflow-hidden border border-gray-100">
         <table className="w-full text-sm">
           <thead className="bg-brand-gray">
             <tr>
@@ -352,14 +395,23 @@ export default function AdminResumesPage() {
               <th className="px-4 py-3 text-left font-medium text-brand-navy">Experience</th>
               <th className="px-4 py-3 text-left font-medium text-brand-navy">Status</th>
               <th className="px-4 py-3 text-left font-medium text-brand-navy">Date</th>
-              <th className="px-4 py-3 text-right font-medium text-brand-navy">Actions</th>
+              <th className="px-4 py-3 text-right font-medium text-brand-navy w-20">Delete</th>
             </tr>
           </thead>
           <tbody>
             {filteredResumes.map((item, index) => (
-              <tr key={item.id} className="border-t border-gray-100 hover:bg-brand-gray/50">
+              <tr
+                key={item.id}
+                onClick={() => openResume(item)}
+                className={cn(
+                  "border-t border-gray-100 cursor-pointer",
+                  selected?.id === item.id
+                    ? "bg-brand-accent/10 hover:bg-brand-accent/15"
+                    : "hover:bg-brand-gray/50"
+                )}
+              >
                 {canManualReorder && (
-                  <td className="px-3 py-3">
+                  <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                     <div className="flex flex-col gap-0.5">
                       <button
                         type="button"
@@ -397,11 +449,12 @@ export default function AdminResumesPage() {
                 </td>
                 <td className="px-4 py-3"><StatusBadge status={item.status} /></td>
                 <td className="px-4 py-3 text-brand-dark">{new Date(item.createdAt).toLocaleDateString()}</td>
-                <td className="px-4 py-3 text-right space-x-2">
-                  <button onClick={() => openResume(item)} className="text-brand-accent-dark hover:underline text-xs">
-                    Review
-                  </button>
-                  <button onClick={() => handleDelete(item)} className="text-red-500 hover:underline text-xs">
+                <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(item)}
+                    className="text-red-500 hover:underline text-xs"
+                  >
                     Delete
                   </button>
                 </td>
@@ -417,23 +470,31 @@ export default function AdminResumesPage() {
           </tbody>
         </table>
       </div>
+        </div>
 
-      <AdminDetailModal
-        open={Boolean(selected)}
-        onClose={() => setSelected(null)}
-        wide
-        title={selected?.name ?? ""}
-        subtitle={selected ? <div className="mt-1"><StatusBadge status={selected.status} /></div> : undefined}
-      >
-        {selected && (
-          <div className="space-y-6">
-            {selected.photoUrl && (
-              <div className="relative w-20 h-24 rounded-sm overflow-hidden border border-gray-200 md:hidden">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`/api/admin/resumes/${selected.id}/photo`} alt={selected.name} className="w-full h-full object-cover" />
-              </div>
-            )}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+        {showSidePanel && (
+          <AdminDetailPanel
+            title={selected?.name ?? "Application details"}
+            subtitle={
+              selected ? (
+                <div className="mt-1">
+                  <StatusBadge status={selected.status} />
+                </div>
+              ) : undefined
+            }
+            loading={detailLoading && !selected}
+            onClose={closeDetail}
+            className="xl:sticky xl:top-6 xl:self-start"
+          >
+            {selected && (
+              <div className="space-y-6">
+                {selected.photoUrl && (
+                  <div className="relative w-20 h-24 rounded-sm overflow-hidden border border-gray-200 md:hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={`/api/admin/resumes/${selected.id}/photo`} alt={selected.name} className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div><span className="text-brand-silver">Email</span><p className="font-medium">{selected.email}</p></div>
                 <div><span className="text-brand-silver">Phone</span><p className="font-medium">{selected.phone || "—"}</p></div>
                 <div><span className="text-brand-silver">Department</span><p className="font-medium">{getJobCategoryLabel(selected.positionCategory)}</p></div>
@@ -532,9 +593,11 @@ export default function AdminResumesPage() {
                   {saving ? "Saving..." : "Save Review"}
                 </Button>
               </div>
-          </div>
+              </div>
+            )}
+          </AdminDetailPanel>
         )}
-      </AdminDetailModal>
+      </div>
       <ConfirmDialogHost />
     </div>
   );

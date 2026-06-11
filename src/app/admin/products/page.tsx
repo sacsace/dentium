@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { AdminDetailPanel, AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { AdminDetailPanel, AdminPageHeader, AdminPanelBreadcrumb } from "@/components/admin/AdminPageHeader";
 import { cn } from "@/lib/utils";
 import { DataTable } from "@/components/admin/DataTable";
 import { AdminInlineForm, FormField, inputClass } from "@/components/admin/AdminForm";
 import { useConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { ImageUploadField } from "@/components/admin/ImageUploadField";
+import { useAdminListPanel } from "@/hooks/useAdminListPanel";
+import { ADMIN_PANEL_CLASS, buildAdminBreadcrumbItems } from "@/lib/admin-panel";
 
 const RichTextEditor = dynamic(
   () => import("@/components/admin/RichTextEditor").then((m) => m.RichTextEditor),
@@ -45,8 +47,6 @@ interface Category {
   id: string;
   name: string;
 }
-
-type PanelMode = "view" | "edit" | "create" | null;
 
 type FormState = typeof EMPTY_FORM;
 
@@ -183,7 +183,7 @@ function ProductFormFields({
   );
 }
 
-function ProductDetailView({ selected, onEdit }: { selected: ProductDetail; onEdit: () => void }) {
+function ProductDetailView({ selected }: { selected: ProductDetail }) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
@@ -279,12 +279,6 @@ function ProductDetailView({ selected, onEdit }: { selected: ProductDetail; onEd
           )}
         </div>
       )}
-
-      <div className="pt-2 border-t border-gray-100">
-        <Button type="button" onClick={onEdit} className="w-full sm:w-auto">
-          Edit Product
-        </Button>
-      </div>
     </div>
   );
 }
@@ -292,15 +286,14 @@ function ProductDetailView({ selected, onEdit }: { selected: ProductDetail; onEd
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [panelMode, setPanelMode] = useState<PanelMode>(null);
-  const [editing, setEditing] = useState<Product | null>(null);
-  const [selected, setSelected] = useState<ProductDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [formError, setFormError] = useState<string | null>(null);
   const [editorKey, setEditorKey] = useState(0);
   const { confirm, ConfirmDialogHost } = useConfirmDialog();
+  const panel = useAdminListPanel<ProductDetail>();
 
   const fetchData = async () => {
     const [pRes, cRes] = await Promise.all([fetch("/api/admin/products"), fetch("/api/admin/categories")]);
@@ -313,55 +306,72 @@ export default function AdminProductsPage() {
   }, []);
 
   const closePanel = () => {
-    setPanelMode(null);
-    setSelected(null);
-    setEditing(null);
+    panel.closePanel();
     setDetailLoading(false);
+    setFormError(null);
   };
 
   const loadProductDetail = async (product: Product) => {
-    setPanelMode("view");
-    setEditing(null);
+    panel.setPanelMode("view");
+    setFormError(null);
     setDetailLoading(true);
-    setSelected(null);
+    panel.setSelected(null);
     try {
       const res = await fetch(`/api/admin/products/${product.id}`);
       const data = await res.json();
-      if (res.ok) setSelected(data);
+      if (res.ok) panel.setSelected(data);
     } finally {
       setDetailLoading(false);
     }
   };
 
   const openCreate = () => {
-    setPanelMode("create");
-    setEditing(null);
-    setSelected(null);
+    panel.openCreate();
     setForm({ ...EMPTY_FORM, categoryId: categories[0]?.id || "" });
     setFormLoading(false);
+    setFormError(null);
     setEditorKey((k) => k + 1);
   };
 
   const openEditFromDetail = () => {
-    if (!selected) return;
-    setPanelMode("edit");
-    setEditing(selected);
-    setForm(detailToForm(selected));
+    if (!panel.selected) return;
+    panel.openEdit();
+    setForm(detailToForm(panel.selected));
     setFormLoading(false);
+    setFormError(null);
     setEditorKey((k) => k + 1);
   };
 
   const cancelForm = () => {
-    if (panelMode === "edit" && selected) {
-      setPanelMode("view");
-      setEditing(null);
+    if (panel.panelMode === "edit" && panel.selected) {
+      setFormError(null);
+      panel.backToView();
       return;
     }
     closePanel();
   };
 
+  const handleBreadcrumbNavigate = (id: string) => {
+    if (id === "view" && panel.panelMode === "edit") {
+      setFormError(null);
+    }
+    panel.handleBreadcrumbNavigate(id);
+  };
+
+  const itemLabel = panel.selected?.name ?? "Details";
+  const breadcrumbItems = buildAdminBreadcrumbItems(
+    "Products",
+    panel.panelMode,
+    panel.panelMode !== "create" ? itemLabel : undefined,
+    "Add Product"
+  );
+  const breadcrumb = (
+    <AdminPanelBreadcrumb items={breadcrumbItems} onNavigate={handleBreadcrumbNavigate} />
+  );
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
     setLoading(true);
     const { imageUrls, features, tags, sku, ...rest } = form;
     const payload = {
@@ -371,6 +381,7 @@ export default function AdminProductsPage() {
       features: features.split("\n").filter(Boolean),
       tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
     };
+    const editing = panel.panelMode === "edit" ? panel.selected : null;
     const url = editing ? `/api/admin/products/${editing.id}` : "/api/admin/products";
     const res = await fetch(url, {
       method: editing ? "PUT" : "POST",
@@ -381,21 +392,20 @@ export default function AdminProductsPage() {
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      alert(data.error || "Failed to save product");
+      setFormError(data.error || "Failed to save product. Please try again.");
       return;
     }
 
     const saved = await res.json();
     await fetchData();
 
-    if (panelMode === "edit" && editing) {
-      setPanelMode("view");
-      setEditing(null);
+    if (panel.panelMode === "edit" && editing) {
+      panel.backToView();
       setDetailLoading(true);
       try {
         const detailRes = await fetch(`/api/admin/products/${saved.id ?? editing.id}`);
         const data = await detailRes.json();
-        if (detailRes.ok) setSelected(data);
+        if (detailRes.ok) panel.setSelected(data);
       } finally {
         setDetailLoading(false);
       }
@@ -423,8 +433,7 @@ export default function AdminProductsPage() {
     const failed = results.filter((r) => !r.ok);
     const deletedIds = new Set(results.filter((r) => r.ok).map((r) => r.product.id));
 
-    if (selected && deletedIds.has(selected.id)) closePanel();
-    if (editing && deletedIds.has(editing.id)) closePanel();
+    if (panel.selected && deletedIds.has(panel.selected.id)) closePanel();
     await fetchData();
 
     if (failed.length > 0) {
@@ -437,9 +446,8 @@ export default function AdminProductsPage() {
     }
   };
 
-  const showSidePanel = panelMode !== null || detailLoading;
-  const activeRowId = editing?.id ?? selected?.id ?? null;
-  const panelClass = "xl:sticky xl:top-6 xl:self-start";
+  const showSidePanel = panel.showSidePanel || detailLoading;
+  const activeRowId = panel.activeRowId;
 
   return (
     <div>
@@ -468,44 +476,66 @@ export default function AdminProductsPage() {
           onBulkDelete={handleBulkDelete}
         />
 
-        {showSidePanel && panelMode === "view" && (
+        {showSidePanel && panel.panelMode === "view" && (
           <AdminDetailPanel
-            title={selected?.name ?? "Product details"}
+            title={panel.selected?.name ?? "Product details"}
+            breadcrumb={breadcrumb}
+            headerAction={
+              panel.selected ? (
+                <Button type="button" size="sm" variant="secondary" onClick={openEditFromDetail}>
+                  Edit
+                </Button>
+              ) : undefined
+            }
             subtitle={
-              selected ? (
+              panel.selected ? (
                 <div className="flex flex-wrap gap-2 mt-1">
-                  {selected.isActive && (
+                  {panel.selected.isActive && (
                     <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Active</span>
                   )}
-                  {selected.isFeatured && (
+                  {panel.selected.isFeatured && (
                     <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">Featured</span>
                   )}
-                  {selected.isNew && (
+                  {panel.selected.isNew && (
                     <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">New</span>
                   )}
                 </div>
               ) : undefined
             }
-            loading={detailLoading && !selected}
+            loading={detailLoading && !panel.selected}
             onClose={closePanel}
-            className={panelClass}
+            className={ADMIN_PANEL_CLASS}
           >
-            {selected && <ProductDetailView selected={selected} onEdit={openEditFromDetail} />}
+            {panel.selected && <ProductDetailView selected={panel.selected} />}
           </AdminDetailPanel>
         )}
 
-        {showSidePanel && (panelMode === "edit" || panelMode === "create") && (
+        {showSidePanel && panel.panelMode === "edit" && (
           <AdminInlineForm
-            title={panelMode === "edit" ? "Edit Product" : "Add Product"}
-            subtitle={
-              panelMode === "edit" && editing ? (
-                <p className="text-sm text-brand-silver mt-1">{editing.name}</p>
-              ) : undefined
-            }
+            title="Edit Product"
+            subtitle={panel.selected ? <p className="text-sm text-brand-silver mt-1">{panel.selected.name}</p> : undefined}
+            breadcrumb={breadcrumb}
+            cancelLabel="Back to details"
             onSubmit={handleSubmit}
             onCancel={cancelForm}
             loading={loading}
-            className={panelClass}
+            error={formError}
+            className={ADMIN_PANEL_CLASS}
+          >
+            <ProductFormFields form={form} setForm={setForm} categories={categories} formLoading={formLoading} editorKey={editorKey} />
+          </AdminInlineForm>
+        )}
+
+        {showSidePanel && panel.panelMode === "create" && (
+          <AdminInlineForm
+            title="Add Product"
+            breadcrumb={breadcrumb}
+            cancelLabel="Cancel"
+            onSubmit={handleSubmit}
+            onCancel={cancelForm}
+            loading={loading}
+            error={formError}
+            className={ADMIN_PANEL_CLASS}
           >
             <ProductFormFields form={form} setForm={setForm} categories={categories} formLoading={formLoading} editorKey={editorKey} />
           </AdminInlineForm>

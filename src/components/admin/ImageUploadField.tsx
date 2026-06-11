@@ -10,23 +10,25 @@ interface FeaturedImageFieldProps {
   value: string;
   onChange: (url: string) => void;
   hint?: string;
+  shape?: "rect" | "circle";
+  hasError?: boolean;
 }
 
-export function FeaturedImageField({ value, onChange, hint }: FeaturedImageFieldProps) {
+export function FeaturedImageField({ value, onChange, hint, shape = "rect", hasError }: FeaturedImageFieldProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState("");
+  const [uploadError, setUploadError] = useState("");
 
   const handleFile = async (file: File | undefined) => {
     if (!file || !file.type.startsWith("image/")) return;
 
     setUploading(true);
-    setError("");
+    setUploadError("");
     try {
       const url = await uploadFile(file);
       onChange(url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
+      setUploadError(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -34,14 +36,20 @@ export function FeaturedImageField({ value, onChange, hint }: FeaturedImageField
   };
 
   return (
-    <div className="space-y-3">
+    <div className={`space-y-3 ${hasError ? "rounded-sm" : ""}`}>
       {value && (
-        <div className="relative group w-fit">
+        <div
+          className={`relative group w-fit ${hasError ? (shape === "circle" ? "rounded-full ring-2 ring-red-400" : "rounded-sm ring-2 ring-red-400") : ""}`}
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={value}
             alt="Featured"
-            className="w-40 h-28 object-cover rounded-sm border border-gray-200"
+            className={
+              shape === "circle"
+                ? "w-32 h-32 object-cover rounded-full border-2 border-gray-200"
+                : "w-40 h-28 object-cover rounded-sm border border-gray-200"
+            }
           />
           <button
             type="button"
@@ -81,7 +89,7 @@ export function FeaturedImageField({ value, onChange, hint }: FeaturedImageField
         onChange={(e) => onChange(e.target.value)}
       />
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {uploadError && <p className="text-sm text-red-600">{uploadError}</p>}
     </div>
   );
 }

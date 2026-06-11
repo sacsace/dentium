@@ -103,9 +103,11 @@ export function DataTable<T extends { id: string }>({
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const titleKey = mobileTitleKey ?? columns[0]?.key;
   const actionLabel = (item: T) => getEditLabel?.(item) ?? editLabel;
+  const rowClickHandler = onRowClick ?? (!getEditLabel && onEdit ? onEdit : undefined);
+  const showEditAction = Boolean(onEdit && rowClickHandler !== onEdit);
   const rowClass = (item: T) =>
     cn(
-      onRowClick && "cursor-pointer",
+      rowClickHandler && "cursor-pointer",
       selectedRowId === item.id ? "bg-brand-accent/10 hover:bg-brand-accent/15" : "hover:bg-brand-gray/50"
     );
 
@@ -189,7 +191,7 @@ export function DataTable<T extends { id: string }>({
   };
 
   const selectionColSpan = selectable ? 1 : 0;
-  const actionsColSpan = onEdit || onDelete ? 1 : 0;
+  const actionsColSpan = showEditAction || onDelete ? 1 : 0;
 
   return (
     <div className="bg-white rounded-sm shadow-sm overflow-hidden">
@@ -229,7 +231,7 @@ export function DataTable<T extends { id: string }>({
               {filtered.length} of {data.length} result{data.length === 1 ? "" : "s"}
             </p>
           )}
-          {onRowClick && !query.trim() && (
+          {rowClickHandler && !query.trim() && (
             <p className="text-xs text-brand-silver">Click a row to view details</p>
           )}
         </div>
@@ -240,20 +242,20 @@ export function DataTable<T extends { id: string }>({
         {sorted.map((item) => (
           <div
             key={item.id}
-            className={`p-4 space-y-2 ${onRowClick ? rowClass(item) : ""}`}
-            onClick={onRowClick ? () => onRowClick(item) : undefined}
+            className={`p-4 space-y-2 ${rowClickHandler ? rowClass(item) : ""}`}
+            onClick={rowClickHandler ? () => rowClickHandler(item) : undefined}
             onKeyDown={
-              onRowClick
+              rowClickHandler
                 ? (e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      onRowClick(item);
+                      rowClickHandler(item);
                     }
                   }
                 : undefined
             }
-            role={onRowClick ? "button" : undefined}
-            tabIndex={onRowClick ? 0 : undefined}
+            role={rowClickHandler ? "button" : undefined}
+            tabIndex={rowClickHandler ? 0 : undefined}
           >
             <div className="flex items-start gap-3">
               {selectable && (
@@ -282,9 +284,9 @@ export function DataTable<T extends { id: string }>({
                   </div>
                 ))}
             </dl>
-            {(onEdit || onDelete) && (
+            {(showEditAction || onDelete) && (
               <div className="flex flex-wrap gap-3 pt-2 border-t border-gray-100">
-                {onEdit && (
+                {showEditAction && onEdit && (
                   <button
                     type="button"
                     onClick={(e) => {
@@ -370,8 +372,10 @@ export function DataTable<T extends { id: string }>({
                   </th>
                 );
               })}
-              {(onEdit || onDelete) && (
-                <th className="px-4 py-3 text-right font-medium text-brand-navy whitespace-nowrap">Actions</th>
+              {(showEditAction || onDelete) && (
+                <th className="px-4 py-3 text-right font-medium text-brand-navy whitespace-nowrap">
+                  {showEditAction && onDelete ? "Actions" : onDelete ? "Delete" : "Actions"}
+                </th>
               )}
             </tr>
           </thead>
@@ -379,8 +383,8 @@ export function DataTable<T extends { id: string }>({
             {sorted.map((item) => (
               <tr
                 key={item.id}
-                onClick={onRowClick ? () => onRowClick(item) : undefined}
-                className={cn("border-t border-gray-100", onRowClick && rowClass(item))}
+                onClick={rowClickHandler ? () => rowClickHandler(item) : undefined}
+                className={cn("border-t border-gray-100", rowClickHandler && rowClass(item))}
               >
                 {selectable && (
                   <td className="px-4 py-3 w-10" onClick={(e) => e.stopPropagation()}>
@@ -398,9 +402,9 @@ export function DataTable<T extends { id: string }>({
                     {cellValue(item, col)}
                   </td>
                 ))}
-                {(onEdit || onDelete) && (
+                {(showEditAction || onDelete) && (
                   <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
-                    {onEdit && (
+                    {showEditAction && onEdit && (
                       <button
                         type="button"
                         onClick={(e) => {

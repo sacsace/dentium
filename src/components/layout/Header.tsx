@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ShoppingCart, ChevronDown, User, LogOut } from "lucide-react";
 import { useCartStore } from "@/store/cart";
+import { clearCartOnLogout } from "@/components/cart/CartAuthSync";
 import { cn } from "@/lib/utils";
 import { megaMenuItems } from "@/lib/navigation";
 import { useAuth, notifyAuthChange } from "@/hooks/useAuth";
@@ -76,6 +77,7 @@ export function Header() {
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
+    clearCartOnLogout();
     notifyAuthChange();
     setIsOpen(false);
     router.push("/");

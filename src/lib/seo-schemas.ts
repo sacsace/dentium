@@ -93,17 +93,6 @@ export function productSchema(product: {
     url: absoluteUrl(`/products/${product.slug}`),
   };
 
-  if (product.showPrice && product.price != null) {
-    schema.offers = {
-      "@type": "Offer",
-      url: absoluteUrl(`/products/${product.slug}`),
-      priceCurrency: "INR",
-      price: String(product.price),
-      availability: "https://schema.org/InStock",
-      seller: { "@id": `${SITE_URL}/#organization` },
-    };
-  }
-
   return schema;
 }
 

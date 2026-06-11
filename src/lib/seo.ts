@@ -137,6 +137,12 @@ export const STATIC_SEO = {
       "Learn about Implantium India Private Limited, the official Dentium operating company in India — our overview, mission, and vision as part of the global Dentium network.",
     path: "/about",
   },
+  ourTeam: {
+    title: "Our Team",
+    description:
+      "Meet the Dentium India team — professionals supporting dental clinicians with implant systems, education, and customer care.",
+    path: "/our-team",
+  },
   products: {
     title: "Products",
     description:

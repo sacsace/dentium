@@ -18,12 +18,12 @@ export async function POST(req: NextRequest) {
     for (const item of items) {
       const product = await prisma.product.findUnique({ where: { id: item.productId } });
       if (!product) continue;
-      const price = product.showPrice ? Number(product.price) : 0;
-      totalAmount += price * item.quantity;
+      const unitPrice = product.price != null ? Number(product.price) : 0;
+      totalAmount += unitPrice * item.quantity;
       orderItems.push({
         productId: item.productId,
         quantity: item.quantity,
-        price: product.showPrice ? product.price : null,
+        price: product.price,
       });
     }
 

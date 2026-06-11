@@ -2,8 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/admin/DataTable";
-import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { AdminDetailPanel, AdminPageHeader, AdminPanelBreadcrumb } from "@/components/admin/AdminPageHeader";
+import { AdminListDetailGrid } from "@/components/admin/AdminListDetailGrid";
+import { ADMIN_PANEL_CLASS } from "@/lib/admin-panel";
 import { useConfirmDialog } from "@/components/admin/ConfirmDialog";
+import { Button } from "@/components/ui/Button";
 import { formatDate } from "@/lib/utils";
 
 interface Subscriber {
@@ -30,6 +33,7 @@ function StatusBadge({ isActive }: { isActive: boolean }) {
 export default function AdminNewsletterPage() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
+  const [selected, setSelected] = useState<Subscriber | null>(null);
   const { confirm, ConfirmDialogHost } = useConfirmDialog();
 
   const loadSubscribers = useCallback(() => {
@@ -58,7 +62,11 @@ export default function AdminNewsletterPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive: !item.isActive }),
     });
-    if (res.ok) loadSubscribers();
+    if (res.ok) {
+      loadSubscribers();
+      const updated = { ...item, isActive: !item.isActive };
+      setSelected((prev) => (prev?.id === item.id ? updated : prev));
+    }
   };
 
   const handleDelete = async (item: Subscriber) => {
@@ -70,7 +78,10 @@ export default function AdminNewsletterPage() {
     if (!ok) return;
 
     const res = await fetch(`/api/admin/newsletter/${item.id}`, { method: "DELETE" });
-    if (res.ok) loadSubscribers();
+    if (res.ok) {
+      if (selected?.id === item.id) setSelected(null);
+      loadSubscribers();
+    }
   };
 
   return (
@@ -102,29 +113,86 @@ export default function AdminNewsletterPage() {
         ))}
       </div>
 
-      <DataTable
-        data={filtered}
-        columns={[
-          { key: "email", label: "Email" },
-          {
-            key: "source",
-            label: "Source",
-            render: (item) => item.source ?? "—",
-          },
-          {
-            key: "isActive",
-            label: "Status",
-            render: (item) => <StatusBadge isActive={item.isActive} />,
-          },
-          {
-            key: "subscribedAt",
-            label: "Subscribed",
-            render: (item) => formatDate(item.subscribedAt),
-          },
-        ]}
-        getEditLabel={(item) => (item.isActive ? "Unsubscribe" : "Resubscribe")}
-        onEdit={(item) => toggleActive(item)}
-        onDelete={handleDelete}
+      <AdminListDetailGrid
+        showSidePanel={Boolean(selected)}
+        list={
+          <DataTable
+            data={filtered}
+            columns={[
+              { key: "email", label: "Email" },
+              {
+                key: "source",
+                label: "Source",
+                render: (item) => item.source ?? "—",
+              },
+              {
+                key: "isActive",
+                label: "Status",
+                render: (item) => <StatusBadge isActive={item.isActive} />,
+              },
+              {
+                key: "subscribedAt",
+                label: "Subscribed",
+                render: (item) => formatDate(item.subscribedAt),
+              },
+            ]}
+            onRowClick={setSelected}
+            selectedRowId={selected?.id ?? null}
+          />
+        }
+        panel={
+          selected && (
+            <AdminDetailPanel
+              title={selected.email}
+              breadcrumb={
+                <AdminPanelBreadcrumb
+                  items={[
+                    { id: "list", label: "Newsletter" },
+                    { id: "view", label: selected.email },
+                  ]}
+                  onNavigate={(id) => {
+                    if (id === "list") setSelected(null);
+                  }}
+                />
+              }
+              subtitle={
+                <div className="mt-1">
+                  <StatusBadge isActive={selected.isActive} />
+                </div>
+              }
+              onClose={() => setSelected(null)}
+              className={ADMIN_PANEL_CLASS}
+            >
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-brand-silver">Source</span>
+                    <p className="font-medium">{selected.source ?? "—"}</p>
+                  </div>
+                  <div>
+                    <span className="text-brand-silver">Subscribed</span>
+                    <p className="font-medium">{formatDate(selected.subscribedAt)}</p>
+                  </div>
+                  {selected.unsubscribedAt && (
+                    <div>
+                      <span className="text-brand-silver">Unsubscribed</span>
+                      <p className="font-medium">{formatDate(selected.unsubscribedAt)}</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-3 pt-2 border-t border-gray-100">
+                  <Button type="button" variant="secondary" onClick={() => toggleActive(selected)}>
+                    {selected.isActive ? "Unsubscribe" : "Resubscribe"}
+                  </Button>
+                  <Button type="button" variant="danger" onClick={() => handleDelete(selected)}>
+                    Remove
+                  </Button>
+                </div>
+              </div>
+            </AdminDetailPanel>
+          )
+        }
       />
     </div>
   );
