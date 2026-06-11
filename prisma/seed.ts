@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Seeding Dentium (India — Implantium India Private Limited)...");
 
-  const adminEmail = process.env.ADMIN_EMAIL || "root";
+  const adminEmail = process.env.ADMIN_EMAIL?.trim() || "admin@dentium.in";
   const adminPasswordPlain = process.env.ADMIN_PASSWORD || "admin123";
   const adminPassword = await bcrypt.hash(adminPasswordPlain, 12);
 

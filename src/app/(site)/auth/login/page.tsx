@@ -58,7 +58,10 @@ export default function LoginPage() {
         <input
           required
           type="text"
-          placeholder="Email or Mobile number"
+          name="username"
+          autoComplete="username"
+          inputMode="text"
+          placeholder="Email or username (root)"
           value={form.email}
           onChange={(e) => setForm({ ...form, email: e.target.value })}
           className={authInputClass}

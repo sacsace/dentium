@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateUser, createToken, setAuthCookie } from "@/lib/auth";
+import { resolveLoginIdentifier } from "@/lib/login-identifier";
 import { getClientIp, rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
@@ -10,12 +11,13 @@ export async function POST(req: NextRequest) {
   try {
     const { email, password } = await req.json();
     if (!email || !password) {
-      return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
+      return NextResponse.json({ error: "Email or username and password are required" }, { status: 400 });
     }
 
-    const user = await authenticateUser(email, password);
+    const loginEmail = resolveLoginIdentifier(email);
+    const user = await authenticateUser(loginEmail, password);
     if (!user) {
-      return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
+      return NextResponse.json({ error: "Invalid email/username or password" }, { status: 401 });
     }
 
     const token = await createToken(user);
