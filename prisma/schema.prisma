@@ -119,7 +119,7 @@ model Post {
   content         String     @db.Text
   featuredImage   String?
   type            PostType   @default(BLOG)
-  status          PostStatus @default(DRAFT)
+  status          PostStatus @default(PUBLISHED)
   isFeatured      Boolean    @default(false)
   isPopular       Boolean    @default(false)
   tags            String[]

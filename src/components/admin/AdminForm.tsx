@@ -92,12 +92,12 @@ export function AdminInlineForm({
   return (
     <div
       className={cn(
-        "bg-white rounded-sm shadow-sm border overflow-hidden",
+        "bg-white rounded-sm shadow-sm border overflow-hidden flex flex-col max-h-[calc(100dvh-5rem)] xl:max-h-[calc(100vh-7rem)]",
         error ? "border-red-200 ring-1 ring-red-100" : "border-gray-100",
         className
       )}
     >
-      <div className="p-4 sm:p-6 border-b gap-3 bg-brand-gray/20">
+      <div className="shrink-0 p-4 sm:p-6 border-b gap-3 bg-brand-gray/20">
         {breadcrumb}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -116,7 +116,7 @@ export function AdminInlineForm({
       </div>
 
       {error && (
-        <div className="mx-4 sm:mx-6 mt-4 flex gap-3 rounded-sm border border-red-200 bg-red-50 px-4 py-3" role="alert">
+        <div className="shrink-0 mx-4 sm:mx-6 mt-4 flex gap-3 rounded-sm border border-red-200 bg-red-50 px-4 py-3" role="alert">
           <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" aria-hidden />
           <div className="min-w-0">
             <p className="text-sm font-medium text-red-800">Could not save</p>
@@ -125,9 +125,9 @@ export function AdminInlineForm({
         </div>
       )}
 
-      <form onSubmit={onSubmit} className="p-4 sm:p-6 space-y-4 max-h-[75vh] overflow-y-auto">
-        {children}
-        <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4 border-t border-gray-100 sticky bottom-0 bg-white">
+      <form onSubmit={onSubmit} className="flex flex-col flex-1 min-h-0">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4">{children}</div>
+        <div className="shrink-0 flex flex-col-reverse sm:flex-row gap-3 p-4 sm:p-6 border-t border-gray-100 bg-white">
           <Button type="button" variant="ghost" onClick={onCancel} className="w-full sm:w-auto">
             {cancelLabel}
           </Button>

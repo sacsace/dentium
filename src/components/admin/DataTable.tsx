@@ -323,7 +323,7 @@ export function DataTable<T extends { id: string }>({
 
       {/* Desktop table */}
       <div className="hidden md:block overflow-x-auto">
-        <table className="w-full text-sm min-w-[640px]">
+        <table className="w-full text-sm">
           <thead className="bg-brand-gray">
             <tr>
               {selectable && (
@@ -398,7 +398,7 @@ export function DataTable<T extends { id: string }>({
                   </td>
                 )}
                 {columns.map((col) => (
-                  <td key={col.key} className="px-4 py-3 text-brand-dark">
+                  <td key={col.key} className="px-4 py-3 text-brand-dark min-w-0">
                     {cellValue(item, col)}
                   </td>
                 ))}

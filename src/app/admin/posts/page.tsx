@@ -14,6 +14,12 @@ import { FeaturedImageField } from "@/components/admin/ImageUploadField";
 import { useAdminListPanel } from "@/hooks/useAdminListPanel";
 import { ADMIN_PANEL_CLASS, buildAdminBreadcrumbItems } from "@/lib/admin-panel";
 import { cn } from "@/lib/utils";
+import {
+  getPostStatusLabel,
+  POST_STATUS_ACTIVE,
+  POST_STATUS_INACTIVE,
+  postStatusToFormValue,
+} from "@/lib/post-status";
 
 const RichTextEditor = dynamic(
   () => import("@/components/admin/RichTextEditor").then((m) => m.RichTextEditor),
@@ -39,15 +45,9 @@ interface PostDetail extends Post {
 }
 
 const EMPTY_FORM = {
-  title: "", excerpt: "", content: "", type: "BLOG", status: "DRAFT",
+  title: "", excerpt: "", content: "", type: "BLOG", status: POST_STATUS_ACTIVE,
   featuredImage: "", tags: "", isFeatured: false, isPopular: false,
   seoTitle: "", seoDescription: "",
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  DRAFT: "Draft",
-  PUBLISHED: "Published",
-  ARCHIVED: "Archived",
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -61,7 +61,7 @@ function postToForm(data: PostDetail) {
     excerpt: data.excerpt ?? "",
     content: data.content ?? "",
     type: data.type ?? "BLOG",
-    status: data.status ?? "DRAFT",
+    status: postStatusToFormValue(data.status ?? POST_STATUS_INACTIVE),
     featuredImage: data.featuredImage ?? "",
     tags: Array.isArray(data.tags) ? data.tags.join(", ") : "",
     isFeatured: data.isFeatured ?? false,
@@ -76,7 +76,7 @@ function PostDetailView({ item }: { item: Post }) {
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <DetailField label="Type">{TYPE_LABELS[item.type] ?? item.type}</DetailField>
-        <DetailField label="Status">{STATUS_LABELS[item.status] ?? item.status}</DetailField>
+        <DetailField label="Status">{getPostStatusLabel(item.status)}</DetailField>
         <DetailField label="Featured">{item.isFeatured ? "Yes" : "No"}</DetailField>
       </div>
     </div>
@@ -123,9 +123,8 @@ function PostFormFields({
         </FormField>
         <FormField label="Status">
           <select className={inputClass} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-            <option value="DRAFT">Draft</option>
-            <option value="PUBLISHED">Published</option>
-            <option value="ARCHIVED">Archived</option>
+            <option value={POST_STATUS_ACTIVE}>Active</option>
+            <option value={POST_STATUS_INACTIVE}>Inactive</option>
           </select>
         </FormField>
       </div>
@@ -339,7 +338,18 @@ export default function AdminPostsPage() {
               {
                 key: "status",
                 label: "Status",
-                render: (p) => STATUS_LABELS[p.status] ?? p.status,
+                render: (p) => (
+                  <span
+                    className={cn(
+                      "inline-block px-2 py-0.5 rounded text-xs font-medium",
+                      p.status === POST_STATUS_ACTIVE
+                        ? "bg-green-100 text-green-800"
+                        : "bg-gray-100 text-gray-600"
+                    )}
+                  >
+                    {getPostStatusLabel(p.status)}
+                  </span>
+                ),
               },
               { key: "isFeatured", label: "Featured", render: (p) => (p.isFeatured ? "Yes" : "No") },
             ]}

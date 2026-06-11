@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import slugify from "slugify";
 import { resolveFeaturedImageForSave } from "@/lib/post-images";
+import { normalizePostStatus, POST_STATUS_ACTIVE } from "@/lib/post-status";
 
 export async function GET() {
   const session = await requireAdmin();
@@ -19,6 +20,8 @@ export async function POST(req: NextRequest) {
   const data = await req.json();
   const slug = data.slug || slugify(data.title, { lower: true, strict: true });
 
+  const status = normalizePostStatus(data.status);
+
   const post = await prisma.post.create({
     data: {
       title: data.title,
@@ -27,14 +30,14 @@ export async function POST(req: NextRequest) {
       content: data.content || "",
       featuredImage: resolveFeaturedImageForSave(data),
       type: data.type || "BLOG",
-      status: data.status || "DRAFT",
+      status,
       isFeatured: data.isFeatured ?? false,
       isPopular: data.isPopular ?? false,
       tags: data.tags || [],
       authorName: data.authorName || "Admin",
       seoTitle: data.seoTitle,
       seoDescription: data.seoDescription,
-      publishedAt: data.status === "PUBLISHED" ? new Date() : null,
+      publishedAt: status === POST_STATUS_ACTIVE ? new Date() : null,
     },
   });
 
