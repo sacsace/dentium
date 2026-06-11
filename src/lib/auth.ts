@@ -3,18 +3,27 @@ import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 
-function getJwtSecret() {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("JWT_SECRET environment variable is required in production");
-    }
-    return new TextEncoder().encode("dentium-india-dev-secret-only");
-  }
-  return new TextEncoder().encode(secret);
+let jwtSecretCache: Uint8Array | null = null;
+
+function isNextBuildPhase() {
+  return process.env.NEXT_PHASE === "phase-production-build";
 }
 
-const JWT_SECRET = getJwtSecret();
+function getJwtSecret(): Uint8Array {
+  if (jwtSecretCache) return jwtSecretCache;
+
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === "production" && !isNextBuildPhase()) {
+      throw new Error("JWT_SECRET environment variable is required in production");
+    }
+    jwtSecretCache = new TextEncoder().encode("dentium-india-dev-secret-only");
+    return jwtSecretCache;
+  }
+
+  jwtSecretCache = new TextEncoder().encode(secret);
+  return jwtSecretCache;
+}
 
 export interface SessionUser {
   id: string;
@@ -35,12 +44,12 @@ export async function createToken(user: SessionUser) {
   return new SignJWT({ ...user })
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("7d")
-    .sign(JWT_SECRET);
+    .sign(getJwtSecret());
 }
 
 export async function verifyToken(token: string): Promise<SessionUser | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, getJwtSecret());
     return payload as unknown as SessionUser;
   } catch {
     return null;
