@@ -41,7 +41,7 @@ export default async function EventsPage({ searchParams }: Props) {
             <Link
               href="/events"
               className={`px-4 py-2 text-sm rounded-sm transition-colors ${
-                !params.region ? "bg-brand-deep text-white" : "bg-brand-gray text-brand-dark hover:bg-brand-light"
+                !params.region ? "bg-brand-accent text-brand-navy" : "bg-brand-gray text-brand-dark hover:bg-brand-light"
               }`}
             >
               All
@@ -51,7 +51,7 @@ export default async function EventsPage({ searchParams }: Props) {
                 key={r.slug}
                 href={`/events?region=${r.slug}`}
                 className={`px-4 py-2 text-sm rounded-sm transition-colors capitalize ${
-                  params.region === r.slug ? "bg-brand-deep text-white" : "bg-brand-gray text-brand-dark hover:bg-brand-light"
+                  params.region === r.slug ? "bg-brand-accent text-brand-navy" : "bg-brand-gray text-brand-dark hover:bg-brand-light"
                 }`}
               >
                 {r.label}

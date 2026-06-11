@@ -16,7 +16,6 @@ export function RequestQuoteButton({ productId, productName }: Props) {
 
   return (
     <Button
-      variant="outline"
       onClick={() => {
         addItem({
           productId,

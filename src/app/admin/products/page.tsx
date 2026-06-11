@@ -1,12 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { AdminDetailPanel, AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { cn } from "@/lib/utils";
 import { DataTable } from "@/components/admin/DataTable";
-import { AdminForm, FormField, inputClass } from "@/components/admin/AdminForm";
+import { AdminInlineForm, FormField, inputClass } from "@/components/admin/AdminForm";
 import { useConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { ImageUploadField } from "@/components/admin/ImageUploadField";
+
+const RichTextEditor = dynamic(
+  () => import("@/components/admin/RichTextEditor").then((m) => m.RichTextEditor),
+  { ssr: false, loading: () => <div className="h-[320px] border border-gray-200 rounded-sm bg-brand-gray/30 animate-pulse" /> }
+);
 
 interface Product {
   id: string;
@@ -18,13 +26,33 @@ interface Product {
   category: { name: string };
 }
 
+interface ProductDetail extends Product {
+  description: string;
+  shortDesc: string | null;
+  sku: string | null;
+  price: unknown;
+  showPrice: boolean;
+  isNew: boolean;
+  tags: string[];
+  images: string[];
+  features: string[];
+  seoTitle: string | null;
+  seoDescription: string | null;
+  categoryId: string;
+}
+
 interface Category {
   id: string;
   name: string;
 }
 
+type PanelMode = "view" | "edit" | "create" | null;
+
+type FormState = typeof EMPTY_FORM;
+
 const EMPTY_FORM = {
   name: "",
+  sku: "",
   description: "",
   shortDesc: "",
   brand: "Dentium",
@@ -41,70 +69,304 @@ const EMPTY_FORM = {
   seoDescription: "",
 };
 
+function detailToForm(data: ProductDetail): FormState {
+  return {
+    name: data.name ?? "",
+    sku: data.sku ?? "",
+    description: data.description ?? "",
+    shortDesc: data.shortDesc ?? "",
+    brand: data.brand ?? "Dentium",
+    categoryId: data.categoryId ?? "",
+    price: data.price != null ? String(data.price) : "",
+    showPrice: data.showPrice ?? false,
+    isFeatured: data.isFeatured ?? false,
+    isNew: data.isNew ?? false,
+    isActive: data.isActive ?? true,
+    imageUrls: Array.isArray(data.images) ? data.images : [],
+    features: Array.isArray(data.features) ? data.features.join("\n") : "",
+    tags: Array.isArray(data.tags) ? data.tags.join(", ") : "",
+    seoTitle: data.seoTitle ?? "",
+    seoDescription: data.seoDescription ?? "",
+  };
+}
+
+function ProductFormFields({
+  form,
+  setForm,
+  categories,
+  formLoading,
+  editorKey,
+}: {
+  form: FormState;
+  setForm: React.Dispatch<React.SetStateAction<FormState>>;
+  categories: Category[];
+  formLoading: boolean;
+  editorKey: number;
+}) {
+  return (
+    <>
+      <FormField label="Name">
+        <input required className={inputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+      </FormField>
+      <FormField label="SKU">
+        <input
+          className={inputClass}
+          value={form.sku}
+          onChange={(e) => setForm({ ...form, sku: e.target.value })}
+          placeholder="Product code (e.g. SL-DA-001)"
+        />
+      </FormField>
+      <FormField label="Short Description">
+        <input className={inputClass} value={form.shortDesc} onChange={(e) => setForm({ ...form, shortDesc: e.target.value })} />
+      </FormField>
+      <FormField label="Description">
+        {formLoading ? (
+          <div className="h-[320px] border border-gray-200 rounded-sm bg-brand-gray/30 animate-pulse" />
+        ) : (
+          <RichTextEditor
+            key={editorKey}
+            value={form.description}
+            onChange={(description) => setForm((prev) => ({ ...prev, description }))}
+            placeholder="Write product description..."
+          />
+        )}
+      </FormField>
+      <FormField label="Category">
+        <select className={inputClass} value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })}>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      </FormField>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <FormField label="Price">
+          <input type="number" className={inputClass} value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
+        </FormField>
+        <FormField label="Brand">
+          <input className={inputClass} value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} />
+        </FormField>
+      </div>
+      <FormField label="Product Images">
+        {formLoading ? (
+          <div className="h-24 border border-gray-200 rounded-sm bg-brand-gray/30 animate-pulse" />
+        ) : (
+          <ImageUploadField value={form.imageUrls} onChange={(imageUrls) => setForm((prev) => ({ ...prev, imageUrls }))} />
+        )}
+      </FormField>
+      <FormField label="Features (one per line)">
+        <textarea className={inputClass} rows={2} value={form.features} onChange={(e) => setForm({ ...form, features: e.target.value })} />
+      </FormField>
+      <FormField label="Tags (comma separated)">
+        <input className={inputClass} value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} />
+      </FormField>
+      <div className="flex flex-wrap gap-4">
+        {(["showPrice", "isFeatured", "isNew", "isActive"] as const).map((key) => (
+          <label key={key} className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={form[key]}
+              onChange={(e) => setForm({ ...form, [key]: e.target.checked })}
+            />
+            {key.replace(/([A-Z])/g, " $1").trim()}
+          </label>
+        ))}
+      </div>
+      <FormField label="SEO Title">
+        <input className={inputClass} value={form.seoTitle} onChange={(e) => setForm({ ...form, seoTitle: e.target.value })} />
+      </FormField>
+      <FormField label="SEO Description">
+        <textarea className={inputClass} rows={2} value={form.seoDescription} onChange={(e) => setForm({ ...form, seoDescription: e.target.value })} />
+      </FormField>
+    </>
+  );
+}
+
+function ProductDetailView({ selected, onEdit }: { selected: ProductDetail; onEdit: () => void }) {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+        <div>
+          <span className="text-brand-silver">Brand</span>
+          <p className="font-medium">{selected.brand || "—"}</p>
+        </div>
+        <div>
+          <span className="text-brand-silver">Category</span>
+          <p className="font-medium">{selected.category?.name || "—"}</p>
+        </div>
+        <div>
+          <span className="text-brand-silver">Slug</span>
+          <p className="font-medium break-all">{selected.slug}</p>
+        </div>
+        <div>
+          <span className="text-brand-silver">SKU</span>
+          <p className="font-medium">{selected.sku || "—"}</p>
+        </div>
+        <div>
+          <span className="text-brand-silver">Price</span>
+          <p className="font-medium">{selected.showPrice && selected.price != null ? `₹${selected.price}` : "Hidden"}</p>
+        </div>
+      </div>
+
+      {selected.shortDesc && (
+        <div>
+          <h4 className="text-sm font-semibold text-brand-navy mb-1">Short Description</h4>
+          <p className="text-sm text-brand-dark">{selected.shortDesc}</p>
+        </div>
+      )}
+
+      {selected.description && (
+        <div>
+          <h4 className="text-sm font-semibold text-brand-navy mb-1">Description</h4>
+          <div
+            className="prose-content text-sm text-brand-dark bg-brand-gray/40 p-4 rounded-sm"
+            dangerouslySetInnerHTML={{ __html: selected.description }}
+          />
+        </div>
+      )}
+
+      {selected.images?.length > 0 && (
+        <div>
+          <h4 className="text-sm font-semibold text-brand-navy mb-3">Images</h4>
+          <div className="flex flex-wrap gap-3">
+            {selected.images.map((url, index) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img key={`${url}-${index}`} src={url} alt={`${selected.name} ${index + 1}`} className="w-24 h-24 object-cover rounded-sm border border-gray-200" />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {selected.features?.length > 0 && (
+        <div>
+          <h4 className="text-sm font-semibold text-brand-navy mb-2">Features</h4>
+          <ul className="list-disc list-inside text-sm text-brand-dark space-y-1">
+            {selected.features.map((feature) => (
+              <li key={feature}>{feature}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {selected.tags?.length > 0 && (
+        <div>
+          <h4 className="text-sm font-semibold text-brand-navy mb-2">Tags</h4>
+          <div className="flex flex-wrap gap-2">
+            {selected.tags.map((tag) => (
+              <span key={tag} className="px-2 py-0.5 bg-brand-gray text-brand-dark text-xs rounded-sm">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {(selected.seoTitle || selected.seoDescription) && (
+        <div className="border-t pt-4 space-y-2 text-sm">
+          <h4 className="font-semibold text-brand-navy">SEO</h4>
+          {selected.seoTitle && (
+            <p>
+              <span className="text-brand-silver">Title: </span>
+              {selected.seoTitle}
+            </p>
+          )}
+          {selected.seoDescription && (
+            <p>
+              <span className="text-brand-silver">Description: </span>
+              {selected.seoDescription}
+            </p>
+          )}
+        </div>
+      )}
+
+      <div className="pt-2 border-t border-gray-100">
+        <Button type="button" onClick={onEdit} className="w-full sm:w-auto">
+          Edit Product
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [showForm, setShowForm] = useState(false);
+  const [panelMode, setPanelMode] = useState<PanelMode>(null);
   const [editing, setEditing] = useState<Product | null>(null);
+  const [selected, setSelected] = useState<ProductDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [editorKey, setEditorKey] = useState(0);
   const { confirm, ConfirmDialogHost } = useConfirmDialog();
 
   const fetchData = async () => {
-    const [pRes, cRes] = await Promise.all([
-      fetch("/api/admin/products"),
-      fetch("/api/admin/categories"),
-    ]);
+    const [pRes, cRes] = await Promise.all([fetch("/api/admin/products"), fetch("/api/admin/categories")]);
     setProducts(await pRes.json());
     setCategories(await cRes.json());
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-  const openCreate = () => {
+  const closePanel = () => {
+    setPanelMode(null);
+    setSelected(null);
     setEditing(null);
-    setForm({ ...EMPTY_FORM, categoryId: categories[0]?.id || "" });
-    setShowForm(true);
+    setDetailLoading(false);
   };
 
-  const openEdit = async (product: Product) => {
-    setEditing(product);
-    setFormLoading(true);
-    setShowForm(true);
+  const loadProductDetail = async (product: Product) => {
+    setPanelMode("view");
+    setEditing(null);
+    setDetailLoading(true);
+    setSelected(null);
     try {
       const res = await fetch(`/api/admin/products/${product.id}`);
       const data = await res.json();
-      if (res.ok) {
-        setForm({
-          name: data.name ?? "",
-          description: data.description ?? "",
-          shortDesc: data.shortDesc ?? "",
-          brand: data.brand ?? "Dentium",
-          categoryId: data.categoryId ?? "",
-          price: data.price != null ? String(data.price) : "",
-          showPrice: data.showPrice ?? false,
-          isFeatured: data.isFeatured ?? false,
-          isNew: data.isNew ?? false,
-          isActive: data.isActive ?? true,
-          imageUrls: Array.isArray(data.images) ? data.images : [],
-          features: Array.isArray(data.features) ? data.features.join("\n") : "",
-          tags: Array.isArray(data.tags) ? data.tags.join(", ") : "",
-          seoTitle: data.seoTitle ?? "",
-          seoDescription: data.seoDescription ?? "",
-        });
-      }
+      if (res.ok) setSelected(data);
     } finally {
-      setFormLoading(false);
+      setDetailLoading(false);
     }
+  };
+
+  const openCreate = () => {
+    setPanelMode("create");
+    setEditing(null);
+    setSelected(null);
+    setForm({ ...EMPTY_FORM, categoryId: categories[0]?.id || "" });
+    setFormLoading(false);
+    setEditorKey((k) => k + 1);
+  };
+
+  const openEditFromDetail = () => {
+    if (!selected) return;
+    setPanelMode("edit");
+    setEditing(selected);
+    setForm(detailToForm(selected));
+    setFormLoading(false);
+    setEditorKey((k) => k + 1);
+  };
+
+  const cancelForm = () => {
+    if (panelMode === "edit" && selected) {
+      setPanelMode("view");
+      setEditing(null);
+      return;
+    }
+    closePanel();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { imageUrls, features, tags, ...rest } = form;
+    const { imageUrls, features, tags, sku, ...rest } = form;
     const payload = {
       ...rest,
+      sku: sku.trim() || null,
       images: imageUrls,
       features: features.split("\n").filter(Boolean),
       tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
@@ -116,83 +378,140 @@ export default function AdminProductsPage() {
       body: JSON.stringify(payload),
     });
     setLoading(false);
-    if (res.ok) {
-      setShowForm(false);
-      fetchData();
-    } else {
+
+    if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       alert(data.error || "Failed to save product");
+      return;
+    }
+
+    const saved = await res.json();
+    await fetchData();
+
+    if (panelMode === "edit" && editing) {
+      setPanelMode("view");
+      setEditing(null);
+      setDetailLoading(true);
+      try {
+        const detailRes = await fetch(`/api/admin/products/${saved.id ?? editing.id}`);
+        const data = await detailRes.json();
+        if (detailRes.ok) setSelected(data);
+      } finally {
+        setDetailLoading(false);
+      }
+      return;
+    }
+
+    closePanel();
+  };
+
+  const handleBulkDelete = async (items: Product[]) => {
+    const ok = await confirm({
+      title: "Delete products",
+      message: `${items.length} product${items.length === 1 ? "" : "s"} will be permanently deleted. This action cannot be undone.`,
+    });
+    if (!ok) return;
+
+    const results = await Promise.all(
+      items.map(async (product) => {
+        const res = await fetch(`/api/admin/products/${product.id}`, { method: "DELETE" });
+        const data = await res.json().catch(() => ({}));
+        return { product, ok: res.ok, error: data.error as string | undefined };
+      })
+    );
+
+    const failed = results.filter((r) => !r.ok);
+    const deletedIds = new Set(results.filter((r) => r.ok).map((r) => r.product.id));
+
+    if (selected && deletedIds.has(selected.id)) closePanel();
+    if (editing && deletedIds.has(editing.id)) closePanel();
+    await fetchData();
+
+    if (failed.length > 0) {
+      const lines = failed.map((r) => `• ${r.product.name}: ${r.error ?? "Delete failed"}`);
+      alert(
+        failed.length === items.length
+          ? `Could not delete selected product(s):\n\n${lines.join("\n")}`
+          : `${items.length - failed.length} deleted, ${failed.length} failed:\n\n${lines.join("\n")}`
+      );
     }
   };
 
-  const handleDelete = async (product: Product) => {
-    const ok = await confirm({
-      title: "Delete product",
-      message: `"${product.name}" will be permanently deleted. This action cannot be undone.`,
-    });
-    if (!ok) return;
-    await fetch(`/api/admin/products/${product.id}`, { method: "DELETE" });
-    fetchData();
-  };
+  const showSidePanel = panelMode !== null || detailLoading;
+  const activeRowId = editing?.id ?? selected?.id ?? null;
+  const panelClass = "xl:sticky xl:top-6 xl:self-start";
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-brand-navy">Products</h1>
-        <Button onClick={openCreate}><Plus className="w-4 h-4" /> Add Product</Button>
-      </div>
-
-      <DataTable
-        columns={[
-          { key: "name", label: "Name" },
-          { key: "brand", label: "Brand" },
-          { key: "category", label: "Category", render: (p) => p.category?.name },
-          { key: "isActive", label: "Active", render: (p) => p.isActive ? "Yes" : "No" },
-          { key: "isFeatured", label: "Featured", render: (p) => p.isFeatured ? "Yes" : "No" },
-        ]}
-        data={products}
-        onEdit={openEdit}
-        onDelete={handleDelete}
+      <AdminPageHeader
+        title="Products"
+        action={
+          <Button onClick={openCreate}>
+            <Plus className="w-4 h-4" /> Add Product
+          </Button>
+        }
       />
 
-      {showForm && (
-        <AdminForm title={editing ? "Edit Product" : "Add Product"} onSubmit={handleSubmit} onClose={() => setShowForm(false)} loading={loading}>
-          <FormField label="Name"><input required className={inputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></FormField>
-          <FormField label="Short Description"><input className={inputClass} value={form.shortDesc} onChange={(e) => setForm({ ...form, shortDesc: e.target.value })} /></FormField>
-          <FormField label="Description"><textarea className={inputClass} rows={4} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></FormField>
-          <FormField label="Category">
-            <select className={inputClass} value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })}>
-              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          </FormField>
-          <div className="grid grid-cols-2 gap-4">
-            <FormField label="Price"><input type="number" className={inputClass} value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></FormField>
-            <FormField label="Brand"><input className={inputClass} value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} /></FormField>
-          </div>
-          <FormField label="Product Images">
-            {formLoading ? (
-              <div className="h-24 border border-gray-200 rounded-sm bg-brand-gray/30 animate-pulse" />
-            ) : (
-              <ImageUploadField
-                value={form.imageUrls}
-                onChange={(imageUrls) => setForm((prev) => ({ ...prev, imageUrls }))}
-              />
-            )}
-          </FormField>
-          <FormField label="Features (one per line)"><textarea className={inputClass} rows={2} value={form.features} onChange={(e) => setForm({ ...form, features: e.target.value })} /></FormField>
-          <FormField label="Tags (comma separated)"><input className={inputClass} value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} /></FormField>
-          <div className="flex flex-wrap gap-4">
-            {["showPrice", "isFeatured", "isNew", "isActive"].map((key) => (
-              <label key={key} className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={form[key as keyof typeof form] as boolean} onChange={(e) => setForm({ ...form, [key]: e.target.checked })} />
-                {key.replace(/([A-Z])/g, " $1").trim()}
-              </label>
-            ))}
-          </div>
-          <FormField label="SEO Title"><input className={inputClass} value={form.seoTitle} onChange={(e) => setForm({ ...form, seoTitle: e.target.value })} /></FormField>
-          <FormField label="SEO Description"><textarea className={inputClass} rows={2} value={form.seoDescription} onChange={(e) => setForm({ ...form, seoDescription: e.target.value })} /></FormField>
-        </AdminForm>
-      )}
+      <div className={cn("grid gap-6", showSidePanel && "xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]")}>
+        <DataTable
+          columns={[
+            { key: "name", label: "Name" },
+            { key: "category", label: "Category", render: (p) => p.category?.name },
+            { key: "isActive", label: "Active", render: (p) => (p.isActive ? "Yes" : "No") },
+            { key: "isFeatured", label: "Featured", render: (p) => (p.isFeatured ? "Yes" : "No") },
+          ]}
+          data={products}
+          searchPlaceholder="Search by name, category..."
+          onRowClick={loadProductDetail}
+          selectedRowId={activeRowId}
+          selectable
+          onBulkDelete={handleBulkDelete}
+        />
+
+        {showSidePanel && panelMode === "view" && (
+          <AdminDetailPanel
+            title={selected?.name ?? "Product details"}
+            subtitle={
+              selected ? (
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {selected.isActive && (
+                    <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Active</span>
+                  )}
+                  {selected.isFeatured && (
+                    <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">Featured</span>
+                  )}
+                  {selected.isNew && (
+                    <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">New</span>
+                  )}
+                </div>
+              ) : undefined
+            }
+            loading={detailLoading && !selected}
+            onClose={closePanel}
+            className={panelClass}
+          >
+            {selected && <ProductDetailView selected={selected} onEdit={openEditFromDetail} />}
+          </AdminDetailPanel>
+        )}
+
+        {showSidePanel && (panelMode === "edit" || panelMode === "create") && (
+          <AdminInlineForm
+            title={panelMode === "edit" ? "Edit Product" : "Add Product"}
+            subtitle={
+              panelMode === "edit" && editing ? (
+                <p className="text-sm text-brand-silver mt-1">{editing.name}</p>
+              ) : undefined
+            }
+            onSubmit={handleSubmit}
+            onCancel={cancelForm}
+            loading={loading}
+            className={panelClass}
+          >
+            <ProductFormFields form={form} setForm={setForm} categories={categories} formLoading={formLoading} editorKey={editorKey} />
+          </AdminInlineForm>
+        )}
+      </div>
+
       <ConfirmDialogHost />
     </div>
   );

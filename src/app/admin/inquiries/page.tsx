@@ -131,6 +131,7 @@ export default function AdminInquiriesPage() {
           },
         ]}
         data={inquiries}
+        onRowClick={openInquiry}
         onEdit={openInquiry}
         editLabel="View"
       />

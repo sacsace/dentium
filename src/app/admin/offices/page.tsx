@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { DataTable } from "@/components/admin/DataTable";
 import { AdminForm, FormField, inputClass } from "@/components/admin/AdminForm";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { useConfirmDialog } from "@/components/admin/ConfirmDialog";
 
 interface GlobalOffice {
@@ -132,15 +133,11 @@ export default function AdminOfficesPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-brand-navy">Global Offices</h1>
-          <p className="text-brand-silver text-sm mt-1">Register, edit, and delete global network offices.</p>
-        </div>
-        <Button onClick={openCreate}>
-          <Plus className="w-4 h-4" /> Add Office
-        </Button>
-      </div>
+      <AdminPageHeader
+        title="Global Offices"
+        description="Register, edit, and delete global network offices."
+        action={<Button onClick={openCreate}><Plus className="w-4 h-4" /> Add Office</Button>}
+      />
 
       <DataTable
         columns={[

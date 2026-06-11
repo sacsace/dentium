@@ -321,7 +321,7 @@ export function Header() {
                       <button
                         type="button"
                         onClick={handleLogout}
-                        className="w-full py-3 text-brand-silver border border-brand-muted rounded-lg text-sm"
+                        className="w-full py-3 bg-brand-accent/15 text-brand-navy border border-brand-accent/40 rounded-lg text-sm font-medium"
                       >
                         Log out
                       </button>
@@ -331,7 +331,7 @@ export function Header() {
                       <Link
                         href="/auth/login"
                         onClick={() => setIsOpen(false)}
-                        className="flex-1 text-center py-3 text-brand-navy border border-brand-muted rounded-sm text-sm"
+                        className="flex-1 text-center py-3 bg-brand-accent text-brand-navy rounded-sm text-sm font-medium"
                       >
                         Login
                       </Link>

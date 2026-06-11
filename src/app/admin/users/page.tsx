@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { DataTable } from "@/components/admin/DataTable";
 import { AdminForm, FormField, inputClass } from "@/components/admin/AdminForm";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { useConfirmDialog } from "@/components/admin/ConfirmDialog";
 
 interface User {
@@ -153,12 +154,14 @@ export default function AdminUsersPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-brand-navy">Users</h1>
-        <Button onClick={openCreate}>
-          <Plus className="w-4 h-4" /> Add User
-        </Button>
-      </div>
+      <AdminPageHeader
+        title="Users"
+        action={
+          <Button onClick={openCreate}>
+            <Plus className="w-4 h-4" /> Add User
+          </Button>
+        }
+      />
 
       <DataTable
         columns={[

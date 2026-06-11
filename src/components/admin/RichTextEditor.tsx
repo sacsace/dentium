@@ -80,7 +80,7 @@ function ToolbarButton({
       onClick={onClick}
       className={`p-1.5 rounded-sm transition-colors ${
         active
-          ? "bg-brand-deep text-white"
+          ? "bg-brand-accent text-brand-navy"
           : "text-brand-navy hover:bg-brand-gray disabled:opacity-40"
       }`}
     >

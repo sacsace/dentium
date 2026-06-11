@@ -56,7 +56,7 @@ export function ProductCard({ product, isLoggedIn = false }: ProductCardProps) {
         {(isLoggedIn || product.showPrice) && (
           <button
             onClick={handleAddToCart}
-            className="absolute bottom-3 right-3 p-2.5 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-brand-deep hover:text-white"
+            className="absolute bottom-3 right-3 p-2.5 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-brand-accent hover:text-brand-navy"
           >
             <ShoppingCart className="w-4 h-4" />
           </button>

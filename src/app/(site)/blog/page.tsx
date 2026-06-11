@@ -54,7 +54,7 @@ export default async function BlogPage({ searchParams }: Props) {
                 className={`px-4 py-2 text-sm rounded-sm transition-colors ${
                   (filter.href === "/blog" && !params.type) ||
                   (params.type && filter.href.includes(params.type))
-                    ? "bg-brand-deep text-white"
+                    ? "bg-brand-accent text-brand-navy"
                     : "bg-brand-gray text-brand-dark hover:bg-brand-light"
                 }`}
               >

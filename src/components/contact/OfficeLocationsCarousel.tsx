@@ -33,7 +33,7 @@ export function OfficeLocationsCarousel({ offices, title = "Our Locations" }: Of
                 type="button"
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
                 disabled={!canPrev}
-                className="w-10 h-10 rounded-full border border-brand-silver/40 bg-white flex items-center justify-center text-brand-navy hover:border-brand-deep disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="w-10 h-10 rounded-full border border-brand-silver/40 bg-white flex items-center justify-center text-brand-navy hover:border-brand-accent hover:text-brand-accent-dark disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 aria-label="Previous locations"
               >
                 <ChevronLeft className="w-5 h-5" />
@@ -42,7 +42,7 @@ export function OfficeLocationsCarousel({ offices, title = "Our Locations" }: Of
                 type="button"
                 onClick={() => setPage((p) => Math.min(maxPage, p + 1))}
                 disabled={!canNext}
-                className="w-10 h-10 rounded-full border border-brand-silver/40 bg-white flex items-center justify-center text-brand-navy hover:border-brand-deep disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="w-10 h-10 rounded-full border border-brand-silver/40 bg-white flex items-center justify-center text-brand-navy hover:border-brand-accent hover:text-brand-accent-dark disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 aria-label="Next locations"
               >
                 <ChevronRight className="w-5 h-5" />

@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { DataTable } from "@/components/admin/DataTable";
 import { AdminForm, FormField, inputClass } from "@/components/admin/AdminForm";
 import { useConfirmDialog } from "@/components/admin/ConfirmDialog";
+import { FeaturedImageField } from "@/components/admin/ImageUploadField";
 
 interface Banner {
   id: string;
@@ -65,6 +67,10 @@ export default function AdminBannersPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.image.trim()) {
+      alert("Please upload or paste a banner image");
+      return;
+    }
     setLoading(true);
     const url = editing ? `/api/admin/banners/${editing.id}` : "/api/admin/banners";
     const res = await fetch(url, { method: editing ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
@@ -91,10 +97,10 @@ export default function AdminBannersPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-brand-navy">Main Banners</h1>
-        <Button onClick={openCreate}><Plus className="w-4 h-4" /> Add Banner</Button>
-      </div>
+      <AdminPageHeader
+        title="Main Banners"
+        action={<Button onClick={openCreate}><Plus className="w-4 h-4" /> Add Banner</Button>}
+      />
 
       <DataTable
         columns={[
@@ -113,7 +119,13 @@ export default function AdminBannersPage() {
           <FormField label="Title"><input required className={inputClass} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></FormField>
           <FormField label="Subtitle"><input className={inputClass} value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} /></FormField>
           <FormField label="Description"><textarea className={inputClass} rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></FormField>
-          <FormField label="Image URL"><input required className={inputClass} value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} /></FormField>
+          <FormField label="Banner Image">
+            <FeaturedImageField
+              value={form.image}
+              onChange={(image) => setForm({ ...form, image })}
+              hint="Shown on homepage hero carousel"
+            />
+          </FormField>
           <div className="grid grid-cols-2 gap-4">
             <FormField label="CTA Text"><input className={inputClass} value={form.ctaText} onChange={(e) => setForm({ ...form, ctaText: e.target.value })} /></FormField>
             <FormField label="CTA Link"><input className={inputClass} value={form.ctaLink} onChange={(e) => setForm({ ...form, ctaLink: e.target.value })} /></FormField>

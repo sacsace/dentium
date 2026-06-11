@@ -78,7 +78,7 @@ export default async function AccountPage() {
             </div>
             <Link
               href="/shop"
-              className="bg-brand-deep text-white p-6 rounded-xl text-center hover:bg-brand-blue transition-colors"
+              className="bg-brand-accent text-brand-navy p-6 rounded-xl text-center hover:bg-brand-accent-dark transition-colors"
             >
               <p className="text-sm font-medium">Browse Products →</p>
             </Link>

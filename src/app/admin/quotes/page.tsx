@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { DataTable } from "@/components/admin/DataTable";
 import { FormField, inputClass } from "@/components/admin/AdminForm";
 import { Button } from "@/components/ui/Button";
-import { X } from "lucide-react";
+import { AdminDetailModal, AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import type { OrderStatus } from "@prisma/client";
 
 interface QuoteItem {
@@ -108,7 +108,7 @@ export default function AdminQuotesPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-brand-navy mb-6">Quote Requests</h1>
+      <AdminPageHeader title="Quote Requests" />
       <DataTable
         columns={[
           { key: "quoteNumber", label: "Quote #" },
@@ -119,28 +119,21 @@ export default function AdminQuotesPage() {
           { key: "createdAt", label: "Date", render: (q) => new Date(q.createdAt).toLocaleDateString() },
         ]}
         data={quotes}
+        mobileTitleKey="quoteNumber"
         onRowClick={openQuote}
       />
 
-      {selected && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-sm w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white z-10">
-              <div>
-                <h2 className="text-lg font-semibold text-brand-navy">{selected.quoteNumber}</h2>
-                <StatusBadge status={selected.status} />
-              </div>
-              <button onClick={() => setSelected(null)} className="text-brand-silver hover:text-brand-dark">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-6">
-              {loadingDetail ? (
-                <p className="text-sm text-brand-silver">Loading details...</p>
-              ) : (
-                <>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+      <AdminDetailModal
+        open={Boolean(selected)}
+        onClose={() => setSelected(null)}
+        title={selected?.quoteNumber ?? ""}
+        subtitle={selected ? <StatusBadge status={selected.status} /> : undefined}
+      >
+        {loadingDetail ? (
+          <p className="text-sm text-brand-silver">Loading details...</p>
+        ) : selected ? (
+          <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div><span className="text-brand-silver">Name</span><p className="font-medium">{selected.name}</p></div>
                     <div><span className="text-brand-silver">Email</span><p className="font-medium">{selected.email}</p></div>
                     <div><span className="text-brand-silver">Phone</span><p className="font-medium">{selected.phone || "—"}</p></div>
@@ -190,16 +183,13 @@ export default function AdminQuotesPage() {
                         ))}
                       </select>
                     </FormField>
-                    <Button onClick={saveStatus} disabled={saving}>
+                    <Button onClick={saveStatus} disabled={saving} className="w-full sm:w-auto">
                       {saving ? "Saving..." : "Save Status"}
                     </Button>
                   </div>
                 </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+        ) : null}
+      </AdminDetailModal>
     </div>
   );
 }

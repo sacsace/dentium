@@ -5,7 +5,9 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { DataTable } from "@/components/admin/DataTable";
 import { AdminForm, FormField, inputClass } from "@/components/admin/AdminForm";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { useConfirmDialog } from "@/components/admin/ConfirmDialog";
+import { FeaturedImageField } from "@/components/admin/ImageUploadField";
 
 interface Event {
   id: string;
@@ -104,10 +106,7 @@ export default function AdminEventsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-brand-navy">Events</h1>
-        <Button onClick={openCreate}><Plus className="w-4 h-4" /> Add Event</Button>
-      </div>
+      <AdminPageHeader title="Events" action={<Button onClick={openCreate}><Plus className="w-4 h-4" /> Add Event</Button>} />
 
       <DataTable
         columns={[
@@ -142,7 +141,13 @@ export default function AdminEventsPage() {
               <option value="CANCELLED">Cancelled</option>
             </select>
           </FormField>
-          <FormField label="Featured Image URL"><input className={inputClass} value={form.featuredImage} onChange={(e) => setForm({ ...form, featuredImage: e.target.value })} /></FormField>
+          <FormField label="Featured Image">
+            <FeaturedImageField
+              value={form.featuredImage}
+              onChange={(featuredImage) => setForm({ ...form, featuredImage })}
+              hint="Shown on event cards and detail page"
+            />
+          </FormField>
           <FormField label="Registration URL"><input className={inputClass} value={form.registrationUrl} onChange={(e) => setForm({ ...form, registrationUrl: e.target.value })} /></FormField>
         </AdminForm>
       )}

@@ -4,8 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/admin/DataTable";
 import { FormField, inputClass } from "@/components/admin/AdminForm";
 import { Button } from "@/components/ui/Button";
-import { Search, X } from "lucide-react";
+import { Search } from "lucide-react";
 import type { OrderStatus } from "@prisma/client";
+import { AdminDetailModal, AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import {
   formatOrderAmount,
   getCustomerEmail,
@@ -134,7 +135,7 @@ export default function AdminOrdersPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-brand-navy mb-6">Orders</h1>
+      <AdminPageHeader title="Orders" />
 
       <div className="flex flex-wrap gap-2 mb-4 border-b border-gray-200">
         {ORDER_TABS.map((tab) => (
@@ -144,13 +145,13 @@ export default function AdminOrdersPage() {
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
               activeTab === tab
-                ? "border-brand-deep text-brand-deep"
+                ? "border-brand-accent text-brand-navy"
                 : "border-transparent text-brand-silver hover:text-brand-dark"
             }`}
           >
             {ORDER_TAB_LABELS[tab]}
             <span className={`ml-2 px-1.5 py-0.5 rounded text-xs ${
-              activeTab === tab ? "bg-brand-deep/10 text-brand-deep" : "bg-brand-gray text-brand-silver"
+              activeTab === tab ? "bg-brand-accent/15 text-brand-navy" : "bg-brand-gray text-brand-silver"
             }`}>
               {tabCounts[tab]}
             </span>
@@ -184,26 +185,21 @@ export default function AdminOrdersPage() {
           { key: "createdAt", label: "Date", render: (o) => new Date(o.createdAt).toLocaleDateString() },
         ]}
         data={filteredOrders}
+        mobileTitleKey="orderNumber"
         onRowClick={openOrder}
       />
 
-      {selected && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-sm w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white z-10">
-              <div>
-                <h2 className="text-lg font-semibold text-brand-navy">{selected.orderNumber}</h2>
-                <div className="mt-1"><StatusBadge status={selected.status} /></div>
-              </div>
-              <button onClick={() => setSelected(null)} className="text-brand-silver hover:text-brand-dark">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {loadingDetail ? (
-              <div className="p-6 h-40 animate-pulse bg-brand-gray/30" />
-            ) : (
-              <div className="p-6 space-y-6">
+      <AdminDetailModal
+        open={Boolean(selected)}
+        onClose={() => setSelected(null)}
+        wide
+        title={selected?.orderNumber ?? ""}
+        subtitle={selected ? <div className="mt-1"><StatusBadge status={selected.status} /></div> : undefined}
+      >
+        {loadingDetail ? (
+          <div className="h-40 animate-pulse bg-brand-gray/30 rounded-sm" />
+        ) : selected ? (
+          <div className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-brand-silver">Customer</span>
@@ -281,20 +277,18 @@ export default function AdminOrdersPage() {
                       ))}
                     </select>
                   </FormField>
-                  <div className="flex gap-3 mt-4">
-                    <Button onClick={saveStatus} disabled={saving || editStatus === selected.status}>
+                  <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                    <Button onClick={saveStatus} disabled={saving || editStatus === selected.status} className="w-full sm:w-auto">
                       {saving ? "Saving..." : "Save Status"}
                     </Button>
-                    <Button type="button" variant="ghost" onClick={() => setSelected(null)}>
+                    <Button type="button" variant="ghost" onClick={() => setSelected(null)} className="w-full sm:w-auto">
                       Close
                     </Button>
                   </div>
                 </div>
-              </div>
-            )}
           </div>
-        </div>
-      )}
+        ) : null}
+      </AdminDetailModal>
     </div>
   );
 }

@@ -55,6 +55,31 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  await prisma.product.delete({ where: { id } });
+
+  const product = await prisma.product.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      _count: { select: { orderItems: true, quoteItems: true } },
+    },
+  });
+
+  if (!product) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  if (product._count.orderItems > 0) {
+    return NextResponse.json(
+      {
+        error: `"${product.name}" cannot be deleted because it is linked to ${product._count.orderItems} order(s). Deactivate the product instead.`,
+      },
+      { status: 409 }
+    );
+  }
+
+  await prisma.$transaction([
+    prisma.quoteItem.deleteMany({ where: { productId: id } }),
+    prisma.product.delete({ where: { id } }),
+  ]);
+
   return NextResponse.json({ success: true });
 }

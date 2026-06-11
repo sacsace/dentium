@@ -108,7 +108,7 @@ export default async function AboutPage() {
             </div>
             <div className="flex flex-wrap gap-3">
               <Link href="/global-network">
-                <Button variant="outline" size="md">
+                <Button size="md">
                   Global Network
                   <ArrowRight className="w-4 h-4" />
                 </Button>

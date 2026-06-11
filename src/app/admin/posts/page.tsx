@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { DataTable } from "@/components/admin/DataTable";
 import { AdminForm, FormField, inputClass } from "@/components/admin/AdminForm";
 import { useConfirmDialog } from "@/components/admin/ConfirmDialog";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { FeaturedImageField } from "@/components/admin/ImageUploadField";
 
 const RichTextEditor = dynamic(
@@ -108,10 +109,7 @@ export default function AdminPostsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-brand-navy">Blog / News</h1>
-        <Button onClick={openAddForm}><Plus className="w-4 h-4" /> Add Post</Button>
-      </div>
+      <AdminPageHeader title="Blog / News" action={<Button onClick={openAddForm}><Plus className="w-4 h-4" /> Add Post</Button>} />
 
       <DataTable
         columns={[

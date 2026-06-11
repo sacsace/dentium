@@ -69,7 +69,7 @@ export default async function ProductsPage({ searchParams }: Props) {
             <Link
               href="/products"
               className={`px-4 py-2 text-sm rounded-sm transition-colors ${
-                !params.category ? "bg-brand-deep text-white" : "bg-brand-gray text-brand-dark hover:bg-brand-light"
+                !params.category ? "bg-brand-accent text-brand-navy" : "bg-brand-gray text-brand-dark hover:bg-brand-light"
               }`}
             >
               All
@@ -81,7 +81,7 @@ export default async function ProductsPage({ searchParams }: Props) {
                 key={cat.id}
                 href={`/products?category=${cat.slug}`}
                 className={`px-4 py-2 text-sm rounded-sm transition-colors ${
-                  params.category === cat.slug ? "bg-brand-deep text-white" : "bg-brand-gray text-brand-dark hover:bg-brand-light"
+                  params.category === cat.slug ? "bg-brand-accent text-brand-navy" : "bg-brand-gray text-brand-dark hover:bg-brand-light"
                 }`}
               >
                 {cat.name}

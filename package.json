@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "dev:clean": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\" && next dev",
+    "dev": "node scripts/dev.mjs",
+    "dev:clean": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\" && node scripts/dev.mjs",
     "build": "next build",
     "start": "next start",
     "start:railway": "npm run db:migrate:deploy && npm run db:ensure-admin && next start",

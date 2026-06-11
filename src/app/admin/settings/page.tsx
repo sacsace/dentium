@@ -127,8 +127,8 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-4rem)] w-full">
-      <div className="flex items-center justify-between mb-6 shrink-0">
-        <h1 className="text-2xl font-semibold text-brand-navy">Site Settings</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 shrink-0">
+        <h1 className="text-xl sm:text-2xl font-semibold text-brand-navy">Site Settings</h1>
         {saved && (
           <div className="bg-green-50 text-green-700 text-sm px-4 py-2 rounded-sm">
             Settings saved successfully!
@@ -148,7 +148,7 @@ export default function AdminSettingsPage() {
               onClick={() => setActiveTab(tab.id)}
               className={`px-6 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                 activeTab === tab.id
-                  ? "border-brand-deep text-brand-deep bg-brand-gray/30"
+                  ? "border-brand-accent text-brand-navy bg-brand-accent/10"
                   : "border-transparent text-brand-silver hover:text-brand-navy hover:bg-brand-gray/20"
               }`}
             >

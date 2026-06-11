@@ -48,7 +48,7 @@ export function ShopFilters({ categories, brands }: ShopFiltersProps) {
           <button
             onClick={() => updateFilter("category", "")}
             className={`block w-full text-left px-3 py-2 text-sm rounded-sm transition-colors ${
-              !searchParams.get("category") ? "bg-brand-deep text-white" : "hover:bg-white"
+              !searchParams.get("category") ? "bg-brand-accent text-brand-navy" : "hover:bg-white"
             }`}
           >
             All Categories
@@ -58,7 +58,7 @@ export function ShopFilters({ categories, brands }: ShopFiltersProps) {
               key={cat.id}
               onClick={() => updateFilter("category", cat.slug)}
               className={`block w-full text-left px-3 py-2 text-sm rounded-sm transition-colors ${
-                searchParams.get("category") === cat.slug ? "bg-brand-deep text-white" : "hover:bg-white"
+                searchParams.get("category") === cat.slug ? "bg-brand-accent text-brand-navy" : "hover:bg-white"
               }`}
             >
               {cat.name}
@@ -76,7 +76,7 @@ export function ShopFilters({ categories, brands }: ShopFiltersProps) {
                 key={brand}
                 onClick={() => updateFilter("brand", brand)}
                 className={`block w-full text-left px-3 py-2 text-sm rounded-sm transition-colors ${
-                  searchParams.get("brand") === brand ? "bg-brand-deep text-white" : "hover:bg-white"
+                  searchParams.get("brand") === brand ? "bg-brand-accent text-brand-navy" : "hover:bg-white"
                 }`}
               >
                 {brand}

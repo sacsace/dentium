@@ -4,13 +4,15 @@ import { useRef, useState } from "react";
 import { ImagePlus, Loader2, X } from "lucide-react";
 import { uploadFile } from "@/lib/upload";
 import { inputClass } from "@/components/admin/AdminForm";
+import { Button } from "@/components/ui/Button";
 
 interface FeaturedImageFieldProps {
   value: string;
   onChange: (url: string) => void;
+  hint?: string;
 }
 
-export function FeaturedImageField({ value, onChange }: FeaturedImageFieldProps) {
+export function FeaturedImageField({ value, onChange, hint }: FeaturedImageFieldProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -60,16 +62,16 @@ export function FeaturedImageField({ value, onChange }: FeaturedImageFieldProps)
           className="hidden"
           onChange={(e) => handleFile(e.target.files?.[0])}
         />
-        <button
+        <Button
           type="button"
+          size="sm"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm border border-gray-200 rounded-sm hover:border-brand-deep hover:text-brand-deep disabled:opacity-50"
         >
           {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
           {uploading ? "Uploading..." : value ? "Replace Image" : "Upload Image"}
-        </button>
-        <span className="text-xs text-brand-silver">Shown on blog listing cards</span>
+        </Button>
+        <span className="text-xs text-brand-silver">{hint ?? "JPG, PNG, WebP, GIF · max 5MB"}</span>
       </div>
 
       <input
@@ -162,15 +164,15 @@ export function ImageUploadField({ value, onChange }: ImageUploadFieldProps) {
           className="hidden"
           onChange={(e) => handleFiles(e.target.files)}
         />
-        <button
+        <Button
           type="button"
+          size="sm"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm border border-gray-200 rounded-sm hover:border-brand-deep hover:text-brand-deep disabled:opacity-50"
         >
           {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
           {uploading ? "Uploading..." : "Upload Images"}
-        </button>
+        </Button>
         <span className="text-xs text-brand-silver">JPG, PNG, WebP, GIF</span>
       </div>
 
@@ -187,13 +189,9 @@ export function ImageUploadField({ value, onChange }: ImageUploadFieldProps) {
             }
           }}
         />
-        <button
-          type="button"
-          onClick={addUrl}
-          className="shrink-0 px-4 py-2 text-sm border border-gray-200 rounded-sm hover:border-brand-deep"
-        >
+        <Button type="button" size="sm" onClick={addUrl}>
           Add
-        </button>
+        </Button>
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}

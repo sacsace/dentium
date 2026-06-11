@@ -254,10 +254,7 @@ export function HeroBanner({ slides: slideConfig }: HeroBannerProps) {
               )}
               {activeSlide.ctaText && activeSlide.ctaLink && (
                 <Link href={activeSlide.ctaLink}>
-                  <Button
-                    size="lg"
-                    className="group mt-6 bg-brand-accent text-brand-navy hover:bg-brand-accent-dark border-0 shadow-lg shadow-brand-accent/20"
-                  >
+                  <Button size="lg" className="group mt-6 shadow-lg shadow-brand-accent/20">
                     {activeSlide.ctaText}
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </Button>

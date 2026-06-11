@@ -133,14 +133,15 @@ function ProfilePhotoField({
           e.target.value = "";
         }}
       />
-      <button
+      <Button
         type="button"
+        size="sm"
+        className="mt-2 w-full"
         onClick={() => inputRef.current?.click()}
-        className="mt-2 w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-xs border border-gray-200 rounded-sm hover:border-brand-deep hover:text-brand-deep transition-colors"
       >
         <Upload className="w-3.5 h-3.5" />
         {preview ? "Change Photo" : "Upload Photo"}
-      </button>
+      </Button>
       <p className="text-xs text-brand-silver mt-1">JPG, PNG, WebP · max 2MB</p>
     </div>
   );
@@ -166,7 +167,7 @@ function FileUploadField({
         {required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
       <label
-        className={`flex items-center gap-3 px-4 py-3 border border-dashed rounded-sm cursor-pointer hover:border-brand-deep hover:bg-brand-gray/30 transition-colors ${
+        className={`flex items-center gap-3 px-4 py-3 border border-dashed rounded-sm cursor-pointer hover:border-brand-accent hover:bg-brand-accent/5 transition-colors ${
           highlight && required && files.length === 0
             ? "border-red-400 bg-red-50/50 ring-2 ring-red-100"
             : "border-gray-300"

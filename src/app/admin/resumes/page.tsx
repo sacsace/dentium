@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FormField, inputClass } from "@/components/admin/AdminForm";
 import { Button } from "@/components/ui/Button";
-import { X, ChevronUp, ChevronDown, Download, ExternalLink } from "lucide-react";
+import { ChevronUp, ChevronDown, Download, ExternalLink } from "lucide-react";
 import { adminFileDownloadUrl } from "@/lib/admin-file-urls";
 import { useConfirmDialog } from "@/components/admin/ConfirmDialog";
+import { AdminDetailModal, AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import {
   ATTACHMENT_LABELS,
   formatAppliedPosition,
@@ -232,7 +233,7 @@ export default function AdminResumesPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-brand-navy mb-6">Resume Applications</h1>
+      <AdminPageHeader title="Resume Applications" />
 
       <div className="bg-white rounded-sm shadow-sm border border-gray-100 p-4 mb-4 space-y-4">
         <div className="flex flex-col lg:flex-row gap-3">
@@ -319,7 +320,27 @@ export default function AdminResumesPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-sm shadow-sm overflow-hidden">
+      <div className="md:hidden bg-white rounded-sm shadow-sm divide-y divide-gray-100">
+        {filteredResumes.map((item) => (
+          <div key={item.id} className="p-4 space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <p className="font-medium text-brand-navy">{item.name}</p>
+              <StatusBadge status={item.status} />
+            </div>
+            <p className="text-sm text-brand-silver">{item.email}</p>
+            <p className="text-xs text-brand-silver">{getJobCategoryLabel(item.positionCategory)} · {new Date(item.createdAt).toLocaleDateString()}</p>
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={() => openResume(item)} className="text-brand-accent-dark text-sm font-medium">Review</button>
+              <button type="button" onClick={() => handleDelete(item)} className="text-red-500 text-sm font-medium">Delete</button>
+            </div>
+          </div>
+        ))}
+        {filteredResumes.length === 0 && (
+          <p className="px-4 py-10 text-center text-brand-silver text-sm">No applications found</p>
+        )}
+      </div>
+
+      <div className="hidden md:block bg-white rounded-sm shadow-sm overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-brand-gray">
             <tr>
@@ -377,7 +398,7 @@ export default function AdminResumesPage() {
                 <td className="px-4 py-3"><StatusBadge status={item.status} /></td>
                 <td className="px-4 py-3 text-brand-dark">{new Date(item.createdAt).toLocaleDateString()}</td>
                 <td className="px-4 py-3 text-right space-x-2">
-                  <button onClick={() => openResume(item)} className="text-brand-deep hover:underline text-xs">
+                  <button onClick={() => openResume(item)} className="text-brand-accent-dark hover:underline text-xs">
                     Review
                   </button>
                   <button onClick={() => handleDelete(item)} className="text-red-500 hover:underline text-xs">
@@ -397,29 +418,22 @@ export default function AdminResumesPage() {
         </table>
       </div>
 
-      {selected && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-sm w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white z-10">
-              <div className="flex items-center gap-4">
-                {selected.photoUrl && (
-                  <div className="relative w-16 h-20 shrink-0 rounded-sm overflow-hidden border border-gray-200">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={`/api/admin/resumes/${selected.id}/photo`} alt={selected.name} className="w-full h-full object-cover" />
-                  </div>
-                )}
-                <div>
-                  <h2 className="text-lg font-semibold text-brand-navy">{selected.name}</h2>
-                  <StatusBadge status={selected.status} />
-                </div>
+      <AdminDetailModal
+        open={Boolean(selected)}
+        onClose={() => setSelected(null)}
+        wide
+        title={selected?.name ?? ""}
+        subtitle={selected ? <div className="mt-1"><StatusBadge status={selected.status} /></div> : undefined}
+      >
+        {selected && (
+          <div className="space-y-6">
+            {selected.photoUrl && (
+              <div className="relative w-20 h-24 rounded-sm overflow-hidden border border-gray-200 md:hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`/api/admin/resumes/${selected.id}/photo`} alt={selected.name} className="w-full h-full object-cover" />
               </div>
-              <button onClick={() => setSelected(null)} className="text-brand-silver hover:text-brand-dark">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-6">
-              <div className="grid grid-cols-2 gap-4 text-sm">
+            )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div><span className="text-brand-silver">Email</span><p className="font-medium">{selected.email}</p></div>
                 <div><span className="text-brand-silver">Phone</span><p className="font-medium">{selected.phone || "—"}</p></div>
                 <div><span className="text-brand-silver">Department</span><p className="font-medium">{getJobCategoryLabel(selected.positionCategory)}</p></div>
@@ -514,14 +528,13 @@ export default function AdminResumesPage() {
                 <FormField label="Admin Notes">
                   <textarea className={inputClass} rows={3} value={editNotes} onChange={(e) => setEditNotes(e.target.value)} placeholder="Internal notes about this candidate..." />
                 </FormField>
-                <Button onClick={saveReview} disabled={saving}>
+                <Button onClick={saveReview} disabled={saving} className="w-full sm:w-auto">
                   {saving ? "Saving..." : "Save Review"}
                 </Button>
               </div>
-            </div>
           </div>
-        </div>
-      )}
+        )}
+      </AdminDetailModal>
       <ConfirmDialogHost />
     </div>
   );

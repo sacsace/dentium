@@ -55,7 +55,7 @@ export default async function AdminDashboard() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold text-brand-navy mb-2">Dashboard</h1>
+        <h1 className="text-xl sm:text-2xl font-semibold text-brand-navy mb-2">Dashboard</h1>
         <p className="text-brand-silver text-sm">Welcome to Dentium Admin CMS</p>
       </div>
 

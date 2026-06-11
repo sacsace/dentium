@@ -369,3 +369,49 @@ model PageVisit {
   @@index([visitorKey])
   @@index([createdAt, visitorKey])
 }
+
+model NewsletterSubscriber {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  source         String?
+  isActive       Boolean   @default(true)
+  subscribedAt   DateTime  @default(now())
+  unsubscribedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([isActive])
+  @@index([subscribedAt])
+}
+
+model DownloadResource {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  fileUrl       String
+  fileName      String
+  fileType      String   @default("PDF")
+  fileSizeBytes Int?
+  requiresLogin Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
+model GalleryImage {
+  id        String   @id @default(cuid())
+  title     String?
+  caption   String?
+  imageUrl  String
+  category  String?
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@index([category])
+}
