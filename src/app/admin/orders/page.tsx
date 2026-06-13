@@ -12,10 +12,15 @@ import { AdminListDetailGrid } from "@/components/admin/AdminListDetailGrid";
 import { ADMIN_PANEL_CLASS } from "@/lib/admin-panel";
 import { refreshAdminNavBadges } from "@/lib/admin-nav-badges";
 import {
+  deletedOrderMatchesKeyword,
+  getDeletedOrderCustomerEmail,
+  getDeletedOrderCustomerName,
+  type DeletedOrderItemSnapshot,
+} from "@/lib/deleted-order";
+import {
   formatOrderAmount,
   getCustomerEmail,
   getCustomerName,
-  isOrderDeletable,
   ORDER_FULFILLMENT_STATUSES,
   ORDER_STATUS_LABELS,
   ORDER_TAB_LABELS,
@@ -53,7 +58,25 @@ interface Order {
   user?: { id: string; name: string | null; email: string | null; phone?: string | null; company?: string | null } | null;
 }
 
-const ORDER_TABS: OrderListTab[] = ["received", "completed"];
+interface DeletedOrderRecord {
+  id: string;
+  orderNumber: string;
+  guestName: string | null;
+  guestEmail: string | null;
+  guestPhone: string | null;
+  guestCompany: string | null;
+  customerName: string | null;
+  customerEmail: string | null;
+  status: OrderStatus;
+  notes: string | null;
+  totalAmount: string | number | null;
+  items: DeletedOrderItemSnapshot[];
+  orderCreatedAt: string;
+  deletedAt: string;
+  deletedBy: string | null;
+}
+
+const ORDER_TABS: OrderListTab[] = ["received", "completed", "deleted"];
 
 function StatusBadge({ status }: { status: OrderStatus }) {
   const styles: Partial<Record<OrderStatus, string>> = {
@@ -71,10 +94,48 @@ function StatusBadge({ status }: { status: OrderStatus }) {
   );
 }
 
+function OrderItemsTable({
+  items,
+}: {
+  items: { productName: string; sku: string | null; quantity: number; price: string | number | null }[];
+}) {
+  return (
+    <div className="border border-gray-100 rounded-sm overflow-hidden">
+      <table className="w-full text-sm">
+        <thead className="bg-brand-gray">
+          <tr>
+            <th className="px-4 py-2 text-left font-medium text-brand-navy">Product</th>
+            <th className="px-4 py-2 text-left font-medium text-brand-navy">SKU</th>
+            <th className="px-4 py-2 text-right font-medium text-brand-navy">Qty</th>
+            <th className="px-4 py-2 text-right font-medium text-brand-navy">Price</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item, index) => (
+            <tr key={index} className="border-t border-gray-100">
+              <td className="px-4 py-3 text-brand-dark">{item.productName}</td>
+              <td className="px-4 py-3 text-brand-silver">{item.sku || "—"}</td>
+              <td className="px-4 py-3 text-right text-brand-dark">{item.quantity}</td>
+              <td className="px-4 py-3 text-right text-brand-dark">{formatOrderAmount(item.price)}</td>
+            </tr>
+          ))}
+          {items.length === 0 && (
+            <tr>
+              <td colSpan={4} className="px-4 py-6 text-center text-brand-silver">No items</td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function AdminOrdersPage() {
   const { confirm, showAlert } = useConfirmDialog();
   const [orders, setOrders] = useState<Order[]>([]);
-  const [selected, setSelected] = useState<Order | null>(null);
+  const [deletedOrders, setDeletedOrders] = useState<DeletedOrderRecord[]>([]);
+  const [selectedActive, setSelectedActive] = useState<Order | null>(null);
+  const [selectedDeleted, setSelectedDeleted] = useState<DeletedOrderRecord | null>(null);
   const [editStatus, setEditStatus] = useState<OrderStatus>("PENDING");
   const [saving, setSaving] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -85,36 +146,55 @@ export default function AdminOrdersPage() {
     fetch("/api/admin/orders").then((r) => r.json()).then(setOrders);
   }, []);
 
+  const loadDeletedOrders = useCallback(() => {
+    fetch("/api/admin/deleted-orders").then((r) => r.json()).then(setDeletedOrders);
+  }, []);
+
   useEffect(() => {
     loadOrders();
-  }, [loadOrders]);
+    loadDeletedOrders();
+  }, [loadOrders, loadDeletedOrders]);
 
   const tabCounts = useMemo(() => {
-    const counts: Record<OrderListTab, number> = { received: 0, completed: 0 };
+    const counts: Record<OrderListTab, number> = { received: 0, completed: 0, deleted: deletedOrders.length };
     for (const order of orders) {
       if (orderMatchesTab(order.status, "received")) counts.received += 1;
       if (orderMatchesTab(order.status, "completed")) counts.completed += 1;
     }
     return counts;
-  }, [orders]);
+  }, [orders, deletedOrders.length]);
 
-  const filteredOrders = useMemo(() => {
+  const filteredActiveOrders = useMemo(() => {
     return orders.filter(
       (order) => orderMatchesTab(order.status, activeTab) && orderMatchesKeyword(order, keyword)
     );
   }, [orders, activeTab, keyword]);
 
-  const closeDetail = () => setSelected(null);
+  const filteredDeletedOrders = useMemo(() => {
+    if (activeTab !== "deleted") return [];
+    return deletedOrders.filter((record) => deletedOrderMatchesKeyword(record, keyword));
+  }, [deletedOrders, activeTab, keyword]);
+
+  const closeDetail = () => {
+    setSelectedActive(null);
+    setSelectedDeleted(null);
+  };
+
+  const handleTabChange = (tab: OrderListTab) => {
+    setActiveTab(tab);
+    closeDetail();
+  };
 
   const openOrder = async (item: Order) => {
-    setSelected(item);
+    setSelectedDeleted(null);
+    setSelectedActive(item);
     setEditStatus(item.status);
     setLoadingDetail(true);
     try {
       const res = await fetch(`/api/admin/orders/${item.id}`);
       const data = await res.json();
       if (res.ok) {
-        setSelected(data);
+        setSelectedActive(data);
         setEditStatus(data.status);
       }
     } finally {
@@ -122,18 +202,31 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const openDeletedOrder = async (item: DeletedOrderRecord) => {
+    setSelectedActive(null);
+    setSelectedDeleted(item);
+    setLoadingDetail(true);
+    try {
+      const res = await fetch(`/api/admin/deleted-orders/${item.id}`);
+      const data = await res.json();
+      if (res.ok) setSelectedDeleted(data);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
   const saveStatus = async () => {
-    if (!selected) return;
+    if (!selectedActive) return;
     setSaving(true);
     try {
-      const res = await fetch(`/api/admin/orders/${selected.id}`, {
+      const res = await fetch(`/api/admin/orders/${selectedActive.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: editStatus }),
       });
       const data = await res.json();
       if (res.ok) {
-        setSelected(data);
+        setSelectedActive(data);
         setOrders((prev) => prev.map((o) => (o.id === data.id ? { ...o, ...data } : o)));
         refreshAdminNavBadges();
       }
@@ -143,27 +236,20 @@ export default function AdminOrdersPage() {
   };
 
   const deleteOrders = async (items: Order[]) => {
-    const deletable = items.filter((order) => isOrderDeletable(order.status));
-    if (deletable.length === 0) {
-      await showAlert({
-        variant: "warning",
-        message: "Only completed (delivered) sales can be deleted.",
-      });
-      return;
-    }
+    if (items.length === 0) return;
 
     const ok = await confirm({
-      title: "Delete completed sales",
+      title: "Delete order(s)",
       message:
-        deletable.length === 1
-          ? `Order ${deletable[0].orderNumber} will be permanently removed from sales records. This cannot be undone.`
-          : `${deletable.length} completed sale${deletable.length === 1 ? "" : "s"} will be permanently removed. This cannot be undone.`,
+        items.length === 1
+          ? `Order ${items[0].orderNumber} will be removed from the list and saved to Deleted records for reference.`
+          : `${items.length} orders will be removed and saved to Deleted records for reference.`,
       confirmLabel: "Delete",
     });
     if (!ok) return;
 
     const results = await Promise.all(
-      deletable.map(async (order) => {
+      items.map(async (order) => {
         const res = await fetch(`/api/admin/orders/${order.id}`, { method: "DELETE" });
         const data = await res.json().catch(() => ({}));
         return { order, ok: res.ok, error: data.error as string | undefined };
@@ -173,9 +259,12 @@ export default function AdminOrdersPage() {
     const failed = results.filter((r) => !r.ok);
     const deletedIds = new Set(results.filter((r) => r.ok).map((r) => r.order.id));
 
-    if (selected && deletedIds.has(selected.id)) closeDetail();
+    if (selectedActive && deletedIds.has(selectedActive.id)) closeDetail();
     setOrders((prev) => prev.filter((o) => !deletedIds.has(o.id)));
-    if (deletedIds.size > 0) refreshAdminNavBadges();
+    if (deletedIds.size > 0) {
+      loadDeletedOrders();
+      refreshAdminNavBadges();
+    }
 
     if (failed.length > 0) {
       const lines = failed.map((r) => `• ${r.order.orderNumber}: ${r.error ?? "Delete failed"}`);
@@ -183,22 +272,24 @@ export default function AdminOrdersPage() {
         variant: "error",
         title: "Could not delete order(s)",
         message:
-          failed.length === deletable.length
+          failed.length === items.length
             ? lines.join("\n")
-            : `${deletable.length - failed.length} deleted, ${failed.length} failed:\n\n${lines.join("\n")}`,
+            : `${items.length - failed.length} deleted, ${failed.length} failed:\n\n${lines.join("\n")}`,
       });
     }
   };
 
   const handleDeleteSelected = (order: Order) => deleteOrders([order]);
   const handleBulkDelete = (items: Order[]) => deleteOrders(items);
+  const canDeleteActive = activeTab === "received" || activeTab === "completed";
+  const selectedRowId = selectedActive?.id ?? selectedDeleted?.id ?? null;
 
   return (
     <div>
       <AdminPageHeader title="Orders" />
 
       <AdminListDetailGrid
-        showSidePanel={Boolean(selected)}
+        showSidePanel={Boolean(selectedActive || selectedDeleted)}
         list={
           <>
             <div className="flex flex-wrap gap-2 mb-4 border-b border-gray-200">
@@ -206,7 +297,7 @@ export default function AdminOrdersPage() {
                 <button
                   key={tab}
                   type="button"
-                  onClick={() => setActiveTab(tab)}
+                  onClick={() => handleTabChange(tab)}
                   className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
                     activeTab === tab
                       ? "border-brand-accent text-brand-navy"
@@ -235,37 +326,51 @@ export default function AdminOrdersPage() {
               </div>
             </div>
 
-            <DataTable
-              columns={[
-                { key: "orderNumber", label: "Order #" },
-                { key: "guestName", label: "Customer", render: (o) => getCustomerName(o) },
-                { key: "guestEmail", label: "Email", render: (o) => getCustomerEmail(o) },
-                { key: "status", label: "Status", render: (o) => <StatusBadge status={o.status} /> },
-                {
-                  key: "totalAmount",
-                  label: "Total",
-                  render: (o) => formatOrderAmount(o.totalAmount),
-                },
-                { key: "createdAt", label: "Date", render: (o) => new Date(o.createdAt).toLocaleDateString() },
-              ]}
-              data={filteredOrders}
-              mobileTitleKey="orderNumber"
-              onRowClick={openOrder}
-              selectedRowId={selected?.id ?? null}
-              selectable={activeTab === "completed"}
-              onBulkDelete={activeTab === "completed" ? handleBulkDelete : undefined}
-              bulkDeleteLabel="Delete sales"
-              onDelete={activeTab === "completed" ? handleDeleteSelected : undefined}
-            />
+            {activeTab === "deleted" ? (
+              <DataTable
+                columns={[
+                  { key: "orderNumber", label: "Order #" },
+                  { key: "customerName", label: "Customer", render: (o) => getDeletedOrderCustomerName(o) },
+                  { key: "customerEmail", label: "Email", render: (o) => getDeletedOrderCustomerEmail(o) },
+                  { key: "status", label: "Status", render: (o) => <StatusBadge status={o.status} /> },
+                  { key: "totalAmount", label: "Total", render: (o) => formatOrderAmount(o.totalAmount) },
+                  { key: "orderCreatedAt", label: "Order Date", render: (o) => new Date(o.orderCreatedAt).toLocaleDateString() },
+                  { key: "deletedAt", label: "Deleted", render: (o) => new Date(o.deletedAt).toLocaleDateString() },
+                ]}
+                data={filteredDeletedOrders}
+                mobileTitleKey="orderNumber"
+                onRowClick={openDeletedOrder}
+                selectedRowId={selectedRowId}
+              />
+            ) : (
+              <DataTable
+                columns={[
+                  { key: "orderNumber", label: "Order #" },
+                  { key: "guestName", label: "Customer", render: (o) => getCustomerName(o) },
+                  { key: "guestEmail", label: "Email", render: (o) => getCustomerEmail(o) },
+                  { key: "status", label: "Status", render: (o) => <StatusBadge status={o.status} /> },
+                  { key: "totalAmount", label: "Total", render: (o) => formatOrderAmount(o.totalAmount) },
+                  { key: "createdAt", label: "Date", render: (o) => new Date(o.createdAt).toLocaleDateString() },
+                ]}
+                data={filteredActiveOrders}
+                mobileTitleKey="orderNumber"
+                onRowClick={openOrder}
+                selectedRowId={selectedRowId}
+                selectable={canDeleteActive}
+                onBulkDelete={canDeleteActive ? handleBulkDelete : undefined}
+                bulkDeleteLabel="Delete orders"
+                onDelete={canDeleteActive ? handleDeleteSelected : undefined}
+              />
+            )}
           </>
         }
         panel={
-          selected && (
+          selectedActive ? (
             <AdminDetailPanel
-              title={selected.orderNumber}
+              title={selectedActive.orderNumber}
               subtitle={
                 <div className="mt-1">
-                  <StatusBadge status={selected.status} />
+                  <StatusBadge status={selectedActive.status} />
                 </div>
               }
               loading={loadingDetail}
@@ -275,7 +380,7 @@ export default function AdminOrdersPage() {
                 <AdminPanelBreadcrumb
                   items={[
                     { id: "list", label: "Orders" },
-                    { id: "view", label: selected.orderNumber },
+                    { id: "view", label: selectedActive.orderNumber },
                   ]}
                   onNavigate={(id) => id === "list" && closeDetail()}
                 />
@@ -285,66 +390,47 @@ export default function AdminOrdersPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-brand-silver">Customer</span>
-                    <p className="font-medium">{getCustomerName(selected)}</p>
+                    <p className="font-medium">{getCustomerName(selectedActive)}</p>
                   </div>
                   <div>
                     <span className="text-brand-silver">Email</span>
-                    <p className="font-medium">{getCustomerEmail(selected)}</p>
+                    <p className="font-medium">{getCustomerEmail(selectedActive)}</p>
                   </div>
                   <div>
                     <span className="text-brand-silver">Phone</span>
-                    <p className="font-medium">{selected.guestPhone || selected.user?.phone || "—"}</p>
+                    <p className="font-medium">{selectedActive.guestPhone || selectedActive.user?.phone || "—"}</p>
                   </div>
                   <div>
                     <span className="text-brand-silver">Company</span>
-                    <p className="font-medium">{selected.guestCompany || selected.user?.company || "—"}</p>
+                    <p className="font-medium">{selectedActive.guestCompany || selectedActive.user?.company || "—"}</p>
                   </div>
                   <div>
                     <span className="text-brand-silver">Order Date</span>
-                    <p className="font-medium">{new Date(selected.createdAt).toLocaleString()}</p>
+                    <p className="font-medium">{new Date(selectedActive.createdAt).toLocaleString()}</p>
                   </div>
                   <div>
                     <span className="text-brand-silver">Total Amount</span>
-                    <p className="font-medium">{formatOrderAmount(selected.totalAmount)}</p>
+                    <p className="font-medium">{formatOrderAmount(selectedActive.totalAmount)}</p>
                   </div>
                 </div>
 
-                {selected.notes && (
+                {selectedActive.notes && (
                   <div>
                     <h4 className="text-sm font-semibold text-brand-navy mb-2">Customer Notes</h4>
-                    <p className="text-sm text-brand-dark whitespace-pre-wrap bg-brand-gray/40 p-4 rounded-sm">{selected.notes}</p>
+                    <p className="text-sm text-brand-dark whitespace-pre-wrap bg-brand-gray/40 p-4 rounded-sm">{selectedActive.notes}</p>
                   </div>
                 )}
 
                 <div>
                   <h4 className="text-sm font-semibold text-brand-navy mb-3">Order Items</h4>
-                  <div className="border border-gray-100 rounded-sm overflow-hidden">
-                    <table className="w-full text-sm">
-                      <thead className="bg-brand-gray">
-                        <tr>
-                          <th className="px-4 py-2 text-left font-medium text-brand-navy">Product</th>
-                          <th className="px-4 py-2 text-left font-medium text-brand-navy">SKU</th>
-                          <th className="px-4 py-2 text-right font-medium text-brand-navy">Qty</th>
-                          <th className="px-4 py-2 text-right font-medium text-brand-navy">Price</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(selected.items ?? []).map((item) => (
-                          <tr key={item.id} className="border-t border-gray-100">
-                            <td className="px-4 py-3 text-brand-dark">{item.product.name}</td>
-                            <td className="px-4 py-3 text-brand-silver">{item.product.sku || "—"}</td>
-                            <td className="px-4 py-3 text-right text-brand-dark">{item.quantity}</td>
-                            <td className="px-4 py-3 text-right text-brand-dark">{formatOrderAmount(item.price)}</td>
-                          </tr>
-                        ))}
-                        {(selected.items ?? []).length === 0 && (
-                          <tr>
-                            <td colSpan={4} className="px-4 py-6 text-center text-brand-silver">No items</td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                  <OrderItemsTable
+                    items={(selectedActive.items ?? []).map((item) => ({
+                      productName: item.product.name,
+                      sku: item.product.sku,
+                      quantity: item.quantity,
+                      price: item.price,
+                    }))}
+                  />
                 </div>
 
                 <div className="border-t pt-6">
@@ -360,19 +446,17 @@ export default function AdminOrdersPage() {
                     </select>
                   </FormField>
                   <div className="flex flex-col sm:flex-row gap-3 mt-4">
-                    <Button onClick={saveStatus} disabled={saving || editStatus === selected.status} className="w-full sm:w-auto">
+                    <Button onClick={saveStatus} disabled={saving || editStatus === selectedActive.status} className="w-full sm:w-auto">
                       {saving ? "Saving..." : "Save Status"}
                     </Button>
-                    {isOrderDeletable(selected.status) && (
-                      <Button
-                        type="button"
-                        variant="danger"
-                        onClick={() => handleDeleteSelected(selected)}
-                        className="w-full sm:w-auto"
-                      >
-                        Delete Sale
-                      </Button>
-                    )}
+                    <Button
+                      type="button"
+                      variant="danger"
+                      onClick={() => handleDeleteSelected(selectedActive)}
+                      className="w-full sm:w-auto"
+                    >
+                      Delete Order
+                    </Button>
                     <Button type="button" variant="ghost" onClick={closeDetail} className="w-full sm:w-auto">
                       Close
                     </Button>
@@ -380,7 +464,85 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
             </AdminDetailPanel>
-          )
+          ) : selectedDeleted ? (
+            <AdminDetailPanel
+              title={selectedDeleted.orderNumber}
+              subtitle={
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <StatusBadge status={selectedDeleted.status} />
+                  <span className="text-xs text-brand-silver">Archived record</span>
+                </div>
+              }
+              loading={loadingDetail}
+              onClose={closeDetail}
+              className={ADMIN_PANEL_CLASS}
+              breadcrumb={
+                <AdminPanelBreadcrumb
+                  items={[
+                    { id: "list", label: "Orders" },
+                    { id: "deleted", label: "Deleted" },
+                    { id: "view", label: selectedDeleted.orderNumber },
+                  ]}
+                  onNavigate={(id) => (id === "list" || id === "deleted") && closeDetail()}
+                />
+              }
+            >
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-brand-silver">Customer</span>
+                    <p className="font-medium">{getDeletedOrderCustomerName(selectedDeleted)}</p>
+                  </div>
+                  <div>
+                    <span className="text-brand-silver">Email</span>
+                    <p className="font-medium">{getDeletedOrderCustomerEmail(selectedDeleted)}</p>
+                  </div>
+                  <div>
+                    <span className="text-brand-silver">Phone</span>
+                    <p className="font-medium">{selectedDeleted.guestPhone || "—"}</p>
+                  </div>
+                  <div>
+                    <span className="text-brand-silver">Company</span>
+                    <p className="font-medium">{selectedDeleted.guestCompany || "—"}</p>
+                  </div>
+                  <div>
+                    <span className="text-brand-silver">Order Date</span>
+                    <p className="font-medium">{new Date(selectedDeleted.orderCreatedAt).toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <span className="text-brand-silver">Deleted At</span>
+                    <p className="font-medium">{new Date(selectedDeleted.deletedAt).toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <span className="text-brand-silver">Total Amount</span>
+                    <p className="font-medium">{formatOrderAmount(selectedDeleted.totalAmount)}</p>
+                  </div>
+                  <div>
+                    <span className="text-brand-silver">Deleted By</span>
+                    <p className="font-medium">{selectedDeleted.deletedBy || "—"}</p>
+                  </div>
+                </div>
+
+                {selectedDeleted.notes && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-brand-navy mb-2">Customer Notes</h4>
+                    <p className="text-sm text-brand-dark whitespace-pre-wrap bg-brand-gray/40 p-4 rounded-sm">{selectedDeleted.notes}</p>
+                  </div>
+                )}
+
+                <div>
+                  <h4 className="text-sm font-semibold text-brand-navy mb-3">Order Items</h4>
+                  <OrderItemsTable items={selectedDeleted.items ?? []} />
+                </div>
+
+                <div className="border-t pt-6">
+                  <Button type="button" variant="ghost" onClick={closeDetail} className="w-full sm:w-auto">
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </AdminDetailPanel>
+          ) : null
         }
       />
     </div>

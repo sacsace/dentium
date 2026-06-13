@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { OrderStatus } from "@prisma/client";
 import { ORDER_FULFILLMENT_STATUSES } from "@/lib/order";
+import { archiveAndDeleteOrder } from "@/lib/deleted-order";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -60,21 +61,14 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
 
   const { id } = await context.params;
 
-  const order = await prisma.order.findUnique({
-    where: { id },
-    select: { id: true, orderNumber: true, status: true },
-  });
-
-  if (!order) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-  if (order.status !== "DELIVERED") {
-    return NextResponse.json(
-      { error: "Only completed (delivered) sales can be deleted." },
-      { status: 409 }
-    );
+  try {
+    const orderNumber = await archiveAndDeleteOrder(id, session.email);
+    return NextResponse.json({ success: true, orderNumber });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Delete failed";
+    if (message === "Not found") {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  await prisma.order.delete({ where: { id } });
-
-  return NextResponse.json({ success: true, orderNumber: order.orderNumber });
 }

@@ -45,7 +45,7 @@ export function getCustomerEmail(order: {
   return order.guestEmail || order.user?.email || "—";
 }
 
-export type OrderListTab = "received" | "completed";
+export type OrderListTab = "received" | "completed" | "deleted";
 
 export const ORDER_TAB_RECEIVED_STATUSES: OrderStatus[] = [
   "PENDING",
@@ -57,19 +57,19 @@ export const ORDER_TAB_RECEIVED_STATUSES: OrderStatus[] = [
 
 export const ORDER_TAB_COMPLETED_STATUSES: OrderStatus[] = ["DELIVERED"];
 
-/** Completed sales records that admins may permanently remove from the list */
-export const ORDER_DELETABLE_STATUSES: OrderStatus[] = ["DELIVERED"];
-
-export function isOrderDeletable(status: OrderStatus): boolean {
-  return ORDER_DELETABLE_STATUSES.includes(status);
+/** Any active order can be archived to the deleted records tab */
+export function isOrderDeletable(_status: OrderStatus): boolean {
+  return true;
 }
 
 export const ORDER_TAB_LABELS: Record<OrderListTab, string> = {
   received: "Received Orders",
   completed: "Completed Sales",
+  deleted: "Deleted",
 };
 
 export function orderMatchesTab(status: OrderStatus, tab: OrderListTab): boolean {
+  if (tab === "deleted") return false;
   if (tab === "completed") return ORDER_TAB_COMPLETED_STATUSES.includes(status);
   return ORDER_TAB_RECEIVED_STATUSES.includes(status);
 }

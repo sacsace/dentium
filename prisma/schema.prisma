@@ -329,6 +329,28 @@ model OrderItem {
   price     Decimal? @db.Decimal(12, 2)
 }
 
+/// Standalone archive — no FK to Order, User, or Product (record-only)
+model DeletedOrder {
+  id             String      @id @default(cuid())
+  orderNumber    String
+  status         OrderStatus
+  guestName      String?
+  guestEmail     String?
+  guestPhone     String?
+  guestCompany   String?
+  customerName   String?
+  customerEmail  String?
+  notes          String?     @db.Text
+  totalAmount    Decimal?    @db.Decimal(12, 2)
+  items          Json
+  orderCreatedAt DateTime
+  deletedAt      DateTime    @default(now())
+  deletedBy      String?
+
+  @@index([orderNumber])
+  @@index([deletedAt])
+}
+
 model QuoteRequest {
   id          String      @id @default(cuid())
   quoteNumber String      @unique
