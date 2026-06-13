@@ -2,6 +2,7 @@
 
 import { ReactNode } from "react";
 import { ChevronRight, X } from "lucide-react";
+import { ADMIN_MODAL_OVERLAY, ADMIN_MODAL_PANEL } from "@/lib/admin-dialog";
 import { cn } from "@/lib/utils";
 
 type BreadcrumbItem = { id: string; label: string };
@@ -53,11 +54,12 @@ export function AdminDetailModal({ open, onClose, title, subtitle, children, wid
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center sm:p-4">
+    <div className={ADMIN_MODAL_OVERLAY}>
       <div
-        className={`bg-white w-full flex flex-col max-h-[100dvh] sm:max-h-[90vh] sm:rounded-sm ${
+        className={cn(
+          ADMIN_MODAL_PANEL,
           wide ? "sm:max-w-[922px]" : "sm:max-w-[806px]"
-        }`}
+        )}
       >
         <div className="flex items-start justify-between p-4 sm:p-6 border-b shrink-0 sticky top-0 bg-white z-10 gap-3">
           <div className="min-w-0">

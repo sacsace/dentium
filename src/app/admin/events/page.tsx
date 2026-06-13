@@ -184,7 +184,7 @@ export default function AdminEventsPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
-  const { confirm, ConfirmDialogHost } = useConfirmDialog();
+  const { confirm, alert } = useConfirmDialog();
   const panel = useAdminListPanel<Event>();
 
   const fetchData = async () => {
@@ -236,7 +236,7 @@ export default function AdminEventsPage() {
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      alert(data.error || "Failed to save event");
+      await alert({ variant: "error", message: data.error || "Failed to save event" });
       return;
     }
 
@@ -264,7 +264,7 @@ export default function AdminEventsPage() {
       fetchData();
     } else {
       const data = await res.json().catch(() => ({}));
-      alert(data.error || "Failed to delete event");
+      await alert({ variant: "error", message: data.error || "Failed to delete event" });
     }
   };
 
@@ -393,7 +393,6 @@ export default function AdminEventsPage() {
         }
       />
 
-      <ConfirmDialogHost />
     </div>
   );
 }

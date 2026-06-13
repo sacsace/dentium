@@ -57,6 +57,13 @@ export const ORDER_TAB_RECEIVED_STATUSES: OrderStatus[] = [
 
 export const ORDER_TAB_COMPLETED_STATUSES: OrderStatus[] = ["DELIVERED"];
 
+/** Completed sales records that admins may permanently remove from the list */
+export const ORDER_DELETABLE_STATUSES: OrderStatus[] = ["DELIVERED"];
+
+export function isOrderDeletable(status: OrderStatus): boolean {
+  return ORDER_DELETABLE_STATUSES.includes(status);
+}
+
 export const ORDER_TAB_LABELS: Record<OrderListTab, string> = {
   received: "Received Orders",
   completed: "Completed Sales",

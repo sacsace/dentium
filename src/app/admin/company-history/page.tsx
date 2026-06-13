@@ -126,7 +126,7 @@ export default function AdminCompanyHistoryPage() {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [formError, setFormError] = useState<string | null>(null);
-  const { confirm, ConfirmDialogHost } = useConfirmDialog();
+  const { confirm } = useConfirmDialog();
   const panel = useAdminListPanel<HistoryItem>();
 
   const fetchData = async () => {
@@ -300,7 +300,6 @@ export default function AdminCompanyHistoryPage() {
         }
       />
 
-      <ConfirmDialogHost />
     </div>
   );
 }

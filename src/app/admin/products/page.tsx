@@ -292,7 +292,7 @@ export default function AdminProductsPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [formError, setFormError] = useState<string | null>(null);
   const [editorKey, setEditorKey] = useState(0);
-  const { confirm, ConfirmDialogHost } = useConfirmDialog();
+  const { confirm, alert } = useConfirmDialog();
   const panel = useAdminListPanel<ProductDetail>();
 
   const fetchData = async () => {
@@ -438,11 +438,14 @@ export default function AdminProductsPage() {
 
     if (failed.length > 0) {
       const lines = failed.map((r) => `• ${r.product.name}: ${r.error ?? "Delete failed"}`);
-      alert(
-        failed.length === items.length
-          ? `Could not delete selected product(s):\n\n${lines.join("\n")}`
-          : `${items.length - failed.length} deleted, ${failed.length} failed:\n\n${lines.join("\n")}`
-      );
+      await alert({
+        variant: "error",
+        title: "Could not delete selected product(s)",
+        message:
+          failed.length === items.length
+            ? lines.join("\n")
+            : `${items.length - failed.length} deleted, ${failed.length} failed:\n\n${lines.join("\n")}`,
+      });
     }
   };
 
@@ -542,7 +545,6 @@ export default function AdminProductsPage() {
         )}
       </div>
 
-      <ConfirmDialogHost />
     </div>
   );
 }

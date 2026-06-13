@@ -180,7 +180,7 @@ export default function AdminPostsPage() {
   const [formLoading, setFormLoading] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [editorKey, setEditorKey] = useState(0);
-  const { confirm, ConfirmDialogHost } = useConfirmDialog();
+  const { confirm, alert } = useConfirmDialog();
   const panel = useAdminListPanel<Post>();
 
   const fetchData = async () => {
@@ -246,7 +246,7 @@ export default function AdminPostsPage() {
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      alert(data.error || "Failed to save post");
+      await alert({ variant: "error", message: data.error || "Failed to save post" });
       return;
     }
 
@@ -413,7 +413,6 @@ export default function AdminPostsPage() {
         }
       />
 
-      <ConfirmDialogHost />
     </div>
   );
 }

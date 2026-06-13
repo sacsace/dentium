@@ -170,7 +170,7 @@ export default function AdminTeamMembersPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const { confirm, ConfirmDialogHost } = useConfirmDialog();
+  const { confirm } = useConfirmDialog();
   const panel = useAdminListPanel<TeamMember>();
 
   const clearErrors = () => {
@@ -382,7 +382,6 @@ export default function AdminTeamMembersPage() {
         }
       />
 
-      <ConfirmDialogHost />
     </div>
   );
 }

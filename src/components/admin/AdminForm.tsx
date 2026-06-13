@@ -4,6 +4,7 @@ import { ReactNode } from "react";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { X } from "lucide-react";
+import { ADMIN_MODAL_OVERLAY, ADMIN_MODAL_PANEL } from "@/lib/admin-dialog";
 import { cn } from "@/lib/utils";
 
 interface AdminFormProps {
@@ -18,10 +19,11 @@ interface AdminFormProps {
 
 export function AdminForm({ title, children, onSubmit, onClose, loading, wide, error }: AdminFormProps) {
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center sm:p-4">
+    <div className={ADMIN_MODAL_OVERLAY}>
       <div
         className={cn(
-          "bg-white w-full sm:rounded-sm max-h-[100dvh] sm:max-h-[90vh] overflow-y-auto shadow-xl",
+          ADMIN_MODAL_PANEL,
+          "overflow-y-auto",
           wide ? "sm:max-w-4xl" : "sm:max-w-2xl",
           error && "ring-2 ring-red-200"
         )}

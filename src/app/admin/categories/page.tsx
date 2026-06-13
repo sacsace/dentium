@@ -63,7 +63,7 @@ export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
-  const { confirm, ConfirmDialogHost } = useConfirmDialog();
+  const { confirm, alert } = useConfirmDialog();
   const panel = useAdminListPanel<Category>();
 
   const fetchData = async () => {
@@ -100,7 +100,7 @@ export default function AdminCategoriesPage() {
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      alert(data.error || "Failed to save category");
+      await alert({ variant: "error", message: data.error || "Failed to save category" });
       return;
     }
 
@@ -128,7 +128,7 @@ export default function AdminCategoriesPage() {
       fetchData();
     } else {
       const data = await res.json().catch(() => ({}));
-      alert(data.error || "Failed to delete category");
+      await alert({ variant: "error", message: data.error || "Failed to delete category" });
     }
   };
 
@@ -220,7 +220,6 @@ export default function AdminCategoriesPage() {
         }
       />
 
-      <ConfirmDialogHost />
     </div>
   );
 }

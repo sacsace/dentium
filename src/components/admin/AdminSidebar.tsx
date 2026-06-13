@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Package,
@@ -28,7 +29,14 @@ import { cn } from "@/lib/utils";
 import { clearCartOnLogout } from "@/components/cart/CartAuthSync";
 import { DentiumLogo } from "@/components/brand/DentiumLogo";
 
-const menuItems = [
+type MenuItem = {
+  label: string;
+  href: string;
+  icon: typeof LayoutDashboard;
+  badgeKey?: keyof NavBadges;
+};
+
+const menuItems: MenuItem[] = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { label: "Products", href: "/admin/products", icon: Package },
@@ -38,7 +46,7 @@ const menuItems = [
   { label: "Gallery", href: "/admin/gallery", icon: Images },
   { label: "Events", href: "/admin/events", icon: Calendar },
   { label: "Banners", href: "/admin/banners", icon: Image },
-  { label: "Orders", href: "/admin/orders", icon: ShoppingCart },
+  { label: "Orders", href: "/admin/orders", icon: ShoppingCart, badgeKey: "orders" },
   { label: "Quote Requests", href: "/admin/quotes", icon: ShoppingCart },
   { label: "Inquiries", href: "/admin/inquiries", icon: MessageSquare },
   { label: "Newsletter", href: "/admin/newsletter", icon: Mail },
@@ -50,6 +58,31 @@ const menuItems = [
   { label: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
+type NavBadges = {
+  orders: number;
+};
+
+function formatBadgeCount(count: number): string {
+  if (count > 99) return "99+";
+  return String(count);
+}
+
+function NavBadge({ count, active }: { count: number; active: boolean }) {
+  if (count <= 0) return null;
+
+  return (
+    <span
+      className={cn(
+        "ml-auto shrink-0 min-w-[1.25rem] h-5 px-1.5 rounded-full text-[10px] font-bold leading-none inline-flex items-center justify-center",
+        active ? "bg-brand-navy text-brand-accent" : "bg-brand-accent text-brand-navy"
+      )}
+      aria-label={`${count} pending orders`}
+    >
+      {formatBadgeCount(count)}
+    </span>
+  );
+}
+
 type AdminSidebarProps = {
   mobileOpen?: boolean;
   onClose?: () => void;
@@ -57,6 +90,35 @@ type AdminSidebarProps = {
 
 export function AdminSidebar({ mobileOpen = false, onClose }: AdminSidebarProps) {
   const pathname = usePathname();
+  const [badges, setBadges] = useState<NavBadges>({ orders: 0 });
+
+  const loadBadges = useCallback(() => {
+    fetch("/api/admin/nav-badges")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data && typeof data.orders === "number") {
+          setBadges({ orders: data.orders });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    loadBadges();
+  }, [loadBadges, pathname]);
+
+  useEffect(() => {
+    const onFocus = () => loadBadges();
+    const onRefresh = () => loadBadges();
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("admin:nav-badges-refresh", onRefresh);
+    const interval = window.setInterval(loadBadges, 60_000);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("admin:nav-badges-refresh", onRefresh);
+      window.clearInterval(interval);
+    };
+  }, [loadBadges]);
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -107,7 +169,8 @@ export function AdminSidebar({ mobileOpen = false, onClose }: AdminSidebarProps)
               )}
             >
               <item.icon className="w-4 h-4 shrink-0" />
-              <span className="truncate">{item.label}</span>
+              <span className="truncate flex-1 min-w-0">{item.label}</span>
+              {item.badgeKey && <NavBadge count={badges[item.badgeKey]} active={isActive} />}
             </Link>
           );
         })}

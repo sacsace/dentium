@@ -56,7 +56,7 @@ export default function AdminNewsletterPage() {
   const [sendError, setSendError] = useState("");
   const [sendResult, setSendResult] = useState<SendResult | null>(null);
   const [sending, setSending] = useState(false);
-  const { confirm, ConfirmDialogHost } = useConfirmDialog();
+  const { confirm } = useConfirmDialog();
 
   const loadSubscribers = useCallback(() => {
     fetch("/api/admin/newsletter")
@@ -174,7 +174,6 @@ export default function AdminNewsletterPage() {
 
   return (
     <div>
-      <ConfirmDialogHost />
       <AdminPageHeader
         title="Newsletter"
         description={`${activeCount} active subscriber${activeCount === 1 ? "" : "s"}`}

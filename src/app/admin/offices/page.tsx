@@ -195,7 +195,7 @@ export default function AdminOfficesPage() {
   const [offices, setOffices] = useState<GlobalOffice[]>([]);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
-  const { confirm, ConfirmDialogHost } = useConfirmDialog();
+  const { confirm, alert } = useConfirmDialog();
   const panel = useAdminListPanel<GlobalOffice>();
 
   const fetchData = async () => {
@@ -245,7 +245,7 @@ export default function AdminOfficesPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        alert(data.error || "Failed to save office");
+        await alert({ variant: "error", message: data.error || "Failed to save office" });
         return;
       }
 
@@ -273,7 +273,7 @@ export default function AdminOfficesPage() {
     const res = await fetch(`/api/admin/offices/${office.id}`, { method: "DELETE" });
     if (!res.ok) {
       const data = await res.json();
-      alert(data.error || "Failed to delete office");
+      await alert({ variant: "error", message: data.error || "Failed to delete office" });
       return;
     }
     if (panel.selected?.id === office.id) panel.closePanel();
@@ -374,7 +374,6 @@ export default function AdminOfficesPage() {
         }
       />
 
-      <ConfirmDialogHost />
     </div>
   );
 }

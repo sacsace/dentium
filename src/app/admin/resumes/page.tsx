@@ -94,7 +94,7 @@ export default function AdminResumesPage() {
   const [saving, setSaving] = useState(false);
   const [editStatus, setEditStatus] = useState<ResumeStatus>("PENDING");
   const [editNotes, setEditNotes] = useState("");
-  const { confirm, ConfirmDialogHost } = useConfirmDialog();
+  const { confirm } = useConfirmDialog();
 
   const loadResumes = useCallback(() => {
     fetch("/api/admin/resumes").then((r) => r.json()).then(setResumes);
@@ -598,7 +598,6 @@ export default function AdminResumesPage() {
           </AdminDetailPanel>
         )}
       </div>
-      <ConfirmDialogHost />
     </div>
   );
 }

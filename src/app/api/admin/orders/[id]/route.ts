@@ -53,3 +53,28 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
 
   return NextResponse.json(order);
 }
+
+export async function DELETE(_req: NextRequest, context: RouteContext) {
+  const session = await requireAdmin();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await context.params;
+
+  const order = await prisma.order.findUnique({
+    where: { id },
+    select: { id: true, orderNumber: true, status: true },
+  });
+
+  if (!order) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  if (order.status !== "DELIVERED") {
+    return NextResponse.json(
+      { error: "Only completed (delivered) sales can be deleted." },
+      { status: 409 }
+    );
+  }
+
+  await prisma.order.delete({ where: { id } });
+
+  return NextResponse.json({ success: true, orderNumber: order.orderNumber });
+}

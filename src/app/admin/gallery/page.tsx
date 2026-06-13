@@ -131,7 +131,7 @@ export default function AdminGalleryPage() {
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
-  const { confirm, ConfirmDialogHost } = useConfirmDialog();
+  const { confirm, alert } = useConfirmDialog();
   const panel = useAdminListPanel<GalleryItem>();
 
   const fetchData = async () => {
@@ -157,7 +157,7 @@ export default function AdminGalleryPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.imageUrl.trim()) {
-      alert("Please upload or paste an image URL");
+      await alert({ variant: "warning", message: "Please upload or paste an image URL" });
       return;
     }
 
@@ -173,7 +173,7 @@ export default function AdminGalleryPage() {
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      alert(data.error || "Failed to save gallery image");
+      await alert({ variant: "error", message: data.error || "Failed to save gallery image" });
       return;
     }
 
@@ -212,7 +212,6 @@ export default function AdminGalleryPage() {
 
   return (
     <div>
-      <ConfirmDialogHost />
       <AdminPageHeader
         title="Gallery"
         description="Manage event and seminar photos shown on the public gallery page"

@@ -15,6 +15,7 @@ import TableRow from "@tiptap/extension-table-row";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
 import { useCallback, useRef } from "react";
+import { useAdminDialog } from "@/components/admin/ConfirmDialog";
 import {
   AlignCenter,
   AlignJustify,
@@ -104,6 +105,7 @@ async function uploadImage(file: File): Promise<string> {
 
 export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { alert } = useAdminDialog();
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -153,10 +155,10 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
         const url = await uploadImage(file);
         editor.chain().focus().setImage({ src: url }).run();
       } catch {
-        window.alert("Image upload failed.");
+        void alert({ variant: "error", message: "Image upload failed." });
       }
     },
-    [editor]
+    [editor, alert]
   );
 
   if (!editor) return null;

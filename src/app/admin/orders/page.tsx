@@ -3,16 +3,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/admin/DataTable";
 import { FormField, inputClass } from "@/components/admin/AdminForm";
+import { useConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { Button } from "@/components/ui/Button";
 import { Search } from "lucide-react";
 import type { OrderStatus } from "@prisma/client";
 import { AdminDetailPanel, AdminPageHeader, AdminPanelBreadcrumb } from "@/components/admin/AdminPageHeader";
 import { AdminListDetailGrid } from "@/components/admin/AdminListDetailGrid";
 import { ADMIN_PANEL_CLASS } from "@/lib/admin-panel";
+import { refreshAdminNavBadges } from "@/lib/admin-nav-badges";
 import {
   formatOrderAmount,
   getCustomerEmail,
   getCustomerName,
+  isOrderDeletable,
   ORDER_FULFILLMENT_STATUSES,
   ORDER_STATUS_LABELS,
   ORDER_TAB_LABELS,
@@ -69,6 +72,7 @@ function StatusBadge({ status }: { status: OrderStatus }) {
 }
 
 export default function AdminOrdersPage() {
+  const { confirm, alert } = useConfirmDialog();
   const [orders, setOrders] = useState<Order[]>([]);
   const [selected, setSelected] = useState<Order | null>(null);
   const [editStatus, setEditStatus] = useState<OrderStatus>("PENDING");
@@ -131,11 +135,63 @@ export default function AdminOrdersPage() {
       if (res.ok) {
         setSelected(data);
         setOrders((prev) => prev.map((o) => (o.id === data.id ? { ...o, ...data } : o)));
+        refreshAdminNavBadges();
       }
     } finally {
       setSaving(false);
     }
   };
+
+  const deleteOrders = async (items: Order[]) => {
+    const deletable = items.filter((order) => isOrderDeletable(order.status));
+    if (deletable.length === 0) {
+      await alert({
+        variant: "warning",
+        message: "Only completed (delivered) sales can be deleted.",
+      });
+      return;
+    }
+
+    const ok = await confirm({
+      title: "Delete completed sales",
+      message:
+        deletable.length === 1
+          ? `Order ${deletable[0].orderNumber} will be permanently removed from sales records. This cannot be undone.`
+          : `${deletable.length} completed sale${deletable.length === 1 ? "" : "s"} will be permanently removed. This cannot be undone.`,
+      confirmLabel: "Delete",
+    });
+    if (!ok) return;
+
+    const results = await Promise.all(
+      deletable.map(async (order) => {
+        const res = await fetch(`/api/admin/orders/${order.id}`, { method: "DELETE" });
+        const data = await res.json().catch(() => ({}));
+        return { order, ok: res.ok, error: data.error as string | undefined };
+      })
+    );
+
+    const failed = results.filter((r) => !r.ok);
+    const deletedIds = new Set(results.filter((r) => r.ok).map((r) => r.order.id));
+
+    if (selected && deletedIds.has(selected.id)) closeDetail();
+    setOrders((prev) => prev.filter((o) => !deletedIds.has(o.id)));
+    if (deletedIds.size > 0) refreshAdminNavBadges();
+
+    if (failed.length > 0) {
+      const lines = failed.map((r) => `• ${r.order.orderNumber}: ${r.error ?? "Delete failed"}`);
+      await alert({
+        variant: "error",
+        title: "Could not delete order(s)",
+        message:
+          failed.length === deletable.length
+            ? lines.join("\n")
+            : `${deletable.length - failed.length} deleted, ${failed.length} failed:\n\n${lines.join("\n")}`,
+      });
+    }
+  };
+
+  const handleDeleteSelected = (order: Order) => deleteOrders([order]);
+  const handleBulkDelete = (items: Order[]) => deleteOrders(items);
 
   return (
     <div>
@@ -196,6 +252,10 @@ export default function AdminOrdersPage() {
               mobileTitleKey="orderNumber"
               onRowClick={openOrder}
               selectedRowId={selected?.id ?? null}
+              selectable={activeTab === "completed"}
+              onBulkDelete={activeTab === "completed" ? handleBulkDelete : undefined}
+              bulkDeleteLabel="Delete sales"
+              onDelete={activeTab === "completed" ? handleDeleteSelected : undefined}
             />
           </>
         }
@@ -303,6 +363,16 @@ export default function AdminOrdersPage() {
                     <Button onClick={saveStatus} disabled={saving || editStatus === selected.status} className="w-full sm:w-auto">
                       {saving ? "Saving..." : "Save Status"}
                     </Button>
+                    {isOrderDeletable(selected.status) && (
+                      <Button
+                        type="button"
+                        variant="danger"
+                        onClick={() => handleDeleteSelected(selected)}
+                        className="w-full sm:w-auto"
+                      >
+                        Delete Sale
+                      </Button>
+                    )}
                     <Button type="button" variant="ghost" onClick={closeDetail} className="w-full sm:w-auto">
                       Close
                     </Button>
