@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Upload } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { BulkImportModal } from "@/components/admin/BulkImportModal";
+import { CATEGORY_IMPORT_TEMPLATE } from "@/lib/bulk-category-import";
 import { DataTable } from "@/components/admin/DataTable";
 import { AdminInlineForm, FormField, inputClass } from "@/components/admin/AdminForm";
 import { AdminDetailPanel, AdminPageHeader, AdminPanelBreadcrumb } from "@/components/admin/AdminPageHeader";
@@ -63,6 +65,7 @@ export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const { confirm, showAlert } = useConfirmDialog();
   const panel = useAdminListPanel<Category>();
 
@@ -145,9 +148,14 @@ export default function AdminCategoriesPage() {
       <AdminPageHeader
         title="Categories"
         action={
-          <Button onClick={openCreate}>
-            <Plus className="w-4 h-4" /> Add Category
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" onClick={() => setBulkOpen(true)}>
+              <Upload className="w-4 h-4" /> Bulk Import
+            </Button>
+            <Button onClick={openCreate}>
+              <Plus className="w-4 h-4" /> Add Category
+            </Button>
+          </div>
         }
       />
 
@@ -220,6 +228,17 @@ export default function AdminCategoriesPage() {
         }
       />
 
+      <BulkImportModal
+        open={bulkOpen}
+        onClose={() => setBulkOpen(false)}
+        title="Bulk Import Categories"
+        description="Upload or paste a CSV file to register multiple categories at once."
+        templateFilename="categories-template.csv"
+        templateContent={CATEGORY_IMPORT_TEMPLATE}
+        columnsHelp="Required: name. Optional: description, image, sortOrder, isActive (true/false). Header row is required."
+        importEndpoint="/api/admin/categories/bulk"
+        onComplete={fetchData}
+      />
     </div>
   );
 }

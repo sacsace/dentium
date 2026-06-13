@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { Plus } from "lucide-react";
+import { Plus, Upload } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { BulkImportModal } from "@/components/admin/BulkImportModal";
+import { PRODUCT_IMPORT_TEMPLATE } from "@/lib/bulk-product-import";
 import { AdminDetailPanel, AdminPageHeader, AdminPanelBreadcrumb } from "@/components/admin/AdminPageHeader";
 import { cn } from "@/lib/utils";
 import { DataTable } from "@/components/admin/DataTable";
@@ -293,6 +295,7 @@ export default function AdminProductsPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [formError, setFormError] = useState<string | null>(null);
   const [editorKey, setEditorKey] = useState(0);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const { confirm, showAlert } = useConfirmDialog();
   const panel = useAdminListPanel<ProductDetail>();
 
@@ -459,9 +462,14 @@ export default function AdminProductsPage() {
       <AdminPageHeader
         title="Products"
         action={
-          <Button onClick={openCreate}>
-            <Plus className="w-4 h-4" /> Add Product
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" onClick={() => setBulkOpen(true)}>
+              <Upload className="w-4 h-4" /> Bulk Import
+            </Button>
+            <Button onClick={openCreate}>
+              <Plus className="w-4 h-4" /> Add Product
+            </Button>
+          </div>
         }
       />
 
@@ -547,6 +555,17 @@ export default function AdminProductsPage() {
         )}
       </div>
 
+      <BulkImportModal
+        open={bulkOpen}
+        onClose={() => setBulkOpen(false)}
+        title="Bulk Import Products"
+        description="Upload or paste a CSV file to register multiple products at once. Categories must already exist."
+        templateFilename="products-template.csv"
+        templateContent={PRODUCT_IMPORT_TEMPLATE}
+        columnsHelp="Required: name, category (name or slug). Optional: sku, description, shortDesc, brand, price, showPrice, isFeatured, isNew, isActive, tags (comma-separated), features (| separated), images (| separated URLs)."
+        importEndpoint="/api/admin/products/bulk"
+        onComplete={fetchData}
+      />
     </div>
   );
 }
