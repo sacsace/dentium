@@ -147,7 +147,7 @@ export default function AdminDownloadsPage() {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [fileMeta, setFileMeta] = useState<DownloadFileMeta | null>(null);
-  const { confirm, alert } = useConfirmDialog();
+  const { confirm, showAlert } = useConfirmDialog();
   const panel = useAdminListPanel<DownloadItem>();
 
   const fetchData = async () => {
@@ -175,7 +175,7 @@ export default function AdminDownloadsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fileMeta) {
-      await alert({ variant: "warning", message: "Please upload a file" });
+      await showAlert({ variant: "warning", message: "Please upload a file" });
       return;
     }
 
@@ -199,7 +199,7 @@ export default function AdminDownloadsPage() {
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      await alert({ variant: "error", message: data.error || "Failed to save download" });
+      await showAlert({ variant: "error", message: data.error || "Failed to save download" });
       return;
     }
 

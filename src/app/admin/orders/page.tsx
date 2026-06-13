@@ -72,7 +72,7 @@ function StatusBadge({ status }: { status: OrderStatus }) {
 }
 
 export default function AdminOrdersPage() {
-  const { confirm, alert } = useConfirmDialog();
+  const { confirm, showAlert } = useConfirmDialog();
   const [orders, setOrders] = useState<Order[]>([]);
   const [selected, setSelected] = useState<Order | null>(null);
   const [editStatus, setEditStatus] = useState<OrderStatus>("PENDING");
@@ -145,7 +145,7 @@ export default function AdminOrdersPage() {
   const deleteOrders = async (items: Order[]) => {
     const deletable = items.filter((order) => isOrderDeletable(order.status));
     if (deletable.length === 0) {
-      await alert({
+      await showAlert({
         variant: "warning",
         message: "Only completed (delivered) sales can be deleted.",
       });
@@ -179,7 +179,7 @@ export default function AdminOrdersPage() {
 
     if (failed.length > 0) {
       const lines = failed.map((r) => `• ${r.order.orderNumber}: ${r.error ?? "Delete failed"}`);
-      await alert({
+      await showAlert({
         variant: "error",
         title: "Could not delete order(s)",
         message:

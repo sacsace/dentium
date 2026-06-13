@@ -125,7 +125,7 @@ export default function AdminBannersPage() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
-  const { confirm, alert } = useConfirmDialog();
+  const { confirm, showAlert } = useConfirmDialog();
   const panel = useAdminListPanel<Banner>();
 
   const fetchData = async () => {
@@ -151,7 +151,7 @@ export default function AdminBannersPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.image.trim()) {
-      await alert({ variant: "warning", message: "Please upload or paste a banner image" });
+      await showAlert({ variant: "warning", message: "Please upload or paste a banner image" });
       return;
     }
     setLoading(true);
@@ -166,7 +166,7 @@ export default function AdminBannersPage() {
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      await alert({ variant: "error", message: data.error || "Failed to save banner" });
+      await showAlert({ variant: "error", message: data.error || "Failed to save banner" });
       return;
     }
 
@@ -194,7 +194,7 @@ export default function AdminBannersPage() {
       fetchData();
     } else {
       const data = await res.json().catch(() => ({}));
-      await alert({ variant: "error", message: data.error || "Failed to delete banner" });
+      await showAlert({ variant: "error", message: data.error || "Failed to delete banner" });
     }
   };
 

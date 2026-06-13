@@ -105,7 +105,7 @@ async function uploadImage(file: File): Promise<string> {
 
 export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { alert } = useAdminDialog();
+  const { showAlert } = useAdminDialog();
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -155,10 +155,10 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
         const url = await uploadImage(file);
         editor.chain().focus().setImage({ src: url }).run();
       } catch {
-        void alert({ variant: "error", message: "Image upload failed." });
+        void showAlert({ variant: "error", message: "Image upload failed." });
       }
     },
-    [editor, alert]
+    [editor, showAlert]
   );
 
   if (!editor) return null;

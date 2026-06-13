@@ -12,6 +12,7 @@ import { useConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { ImageUploadField } from "@/components/admin/ImageUploadField";
 import { useAdminListPanel } from "@/hooks/useAdminListPanel";
 import { ADMIN_PANEL_CLASS, buildAdminBreadcrumbItems } from "@/lib/admin-panel";
+import { refreshAdminNavBadges } from "@/lib/admin-nav-badges";
 
 const RichTextEditor = dynamic(
   () => import("@/components/admin/RichTextEditor").then((m) => m.RichTextEditor),
@@ -292,7 +293,7 @@ export default function AdminProductsPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [formError, setFormError] = useState<string | null>(null);
   const [editorKey, setEditorKey] = useState(0);
-  const { confirm, alert } = useConfirmDialog();
+  const { confirm, showAlert } = useConfirmDialog();
   const panel = useAdminListPanel<ProductDetail>();
 
   const fetchData = async () => {
@@ -435,10 +436,11 @@ export default function AdminProductsPage() {
 
     if (panel.selected && deletedIds.has(panel.selected.id)) closePanel();
     await fetchData();
+    if (deletedIds.size > 0) refreshAdminNavBadges();
 
     if (failed.length > 0) {
       const lines = failed.map((r) => `• ${r.product.name}: ${r.error ?? "Delete failed"}`);
-      await alert({
+      await showAlert({
         variant: "error",
         title: "Could not delete selected product(s)",
         message:

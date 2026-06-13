@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import { OrderStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
+import { ORDER_TAB_RECEIVED_STATUSES } from "@/lib/order";
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+const ACTIVE_ORDER_STATUSES = ORDER_TAB_RECEIVED_STATUSES.filter(
+  (status) => status !== "CANCELLED"
+) as OrderStatus[];
+
+type RouteParams = { params: Promise<{ id: string }> };
+
+export async function GET(_req: NextRequest, { params }: RouteParams) {
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -16,7 +24,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   return NextResponse.json(product);
 }
 
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(req: NextRequest, { params }: RouteParams) {
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -50,7 +58,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   return NextResponse.json(product);
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -61,25 +69,47 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     select: {
       id: true,
       name: true,
-      _count: { select: { orderItems: true, quoteItems: true } },
+      orderItems: {
+        select: {
+          orderId: true,
+          order: { select: { status: true } },
+        },
+      },
     },
   });
 
   if (!product) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if (product._count.orderItems > 0) {
+  const activeOrderIds = new Set(
+    product.orderItems
+      .filter((item) => ACTIVE_ORDER_STATUSES.includes(item.order.status))
+      .map((item) => item.orderId)
+  );
+
+  if (activeOrderIds.size > 0) {
     return NextResponse.json(
       {
-        error: `"${product.name}" cannot be deleted because it is linked to ${product._count.orderItems} order(s). Deactivate the product instead.`,
+        error: `"${product.name}" cannot be deleted because it is linked to ${activeOrderIds.size} active order(s). Complete or cancel those orders first, or deactivate the product instead.`,
       },
       { status: 409 }
     );
   }
 
-  await prisma.$transaction([
-    prisma.quoteItem.deleteMany({ where: { productId: id } }),
-    prisma.product.delete({ where: { id } }),
-  ]);
+  const affectedOrderIds = [...new Set(product.orderItems.map((item) => item.orderId))];
+
+  await prisma.$transaction(async (tx) => {
+    await tx.quoteItem.deleteMany({ where: { productId: id } });
+    await tx.orderItem.deleteMany({ where: { productId: id } });
+
+    for (const orderId of affectedOrderIds) {
+      const remaining = await tx.orderItem.count({ where: { orderId } });
+      if (remaining === 0) {
+        await tx.order.delete({ where: { id: orderId } });
+      }
+    }
+
+    await tx.product.delete({ where: { id } });
+  });
 
   return NextResponse.json({ success: true });
 }

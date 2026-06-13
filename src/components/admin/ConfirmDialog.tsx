@@ -34,7 +34,7 @@ type DialogState = { kind: "confirm"; state: ConfirmState } | { kind: "alert"; s
 
 type AdminDialogContextValue = {
   confirm: (options: ConfirmOptions) => Promise<boolean>;
-  alert: (options: AlertOptions) => Promise<void>;
+  showAlert: (options: AlertOptions) => Promise<void>;
 };
 
 const AdminDialogContext = createContext<AdminDialogContextValue | null>(null);
@@ -178,7 +178,7 @@ export function AdminDialogProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const alert = useCallback((options: AlertOptions) => {
+  const showAlert = useCallback((options: AlertOptions) => {
     return new Promise<void>((resolve) => {
       const next: DialogState = {
         kind: "alert",
@@ -207,7 +207,7 @@ export function AdminDialogProvider({ children }: { children: ReactNode }) {
   }, [dialog, close]);
 
   return (
-    <AdminDialogContext.Provider value={{ confirm, alert }}>
+    <AdminDialogContext.Provider value={{ confirm, showAlert }}>
       {children}
       <AdminDialogHost dialog={dialog} onClose={close} />
     </AdminDialogContext.Provider>

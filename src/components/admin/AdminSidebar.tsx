@@ -36,26 +36,61 @@ type MenuItem = {
   badgeKey?: keyof NavBadges;
 };
 
-const menuItems: MenuItem[] = [
-  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
-  { label: "Products", href: "/admin/products", icon: Package },
-  { label: "Categories", href: "/admin/categories", icon: FolderTree },
-  { label: "Blog / News", href: "/admin/posts", icon: FileText },
-  { label: "Downloads", href: "/admin/downloads", icon: Download },
-  { label: "Gallery", href: "/admin/gallery", icon: Images },
-  { label: "Events", href: "/admin/events", icon: Calendar },
-  { label: "Banners", href: "/admin/banners", icon: Image },
-  { label: "Orders", href: "/admin/orders", icon: ShoppingCart, badgeKey: "orders" },
-  { label: "Quote Requests", href: "/admin/quotes", icon: ShoppingCart },
-  { label: "Inquiries", href: "/admin/inquiries", icon: MessageSquare },
-  { label: "Newsletter", href: "/admin/newsletter", icon: Mail },
-  { label: "Resumes", href: "/admin/resumes", icon: Briefcase },
-  { label: "Global Offices", href: "/admin/offices", icon: Globe },
-  { label: "Company History", href: "/admin/company-history", icon: History },
-  { label: "Team Members", href: "/admin/team-members", icon: UserCircle },
-  { label: "Users", href: "/admin/users", icon: Users },
-  { label: "Settings", href: "/admin/settings", icon: Settings },
+type MenuSection = {
+  title: string;
+  items: MenuItem[];
+};
+
+const menuSections: MenuSection[] = [
+  {
+    title: "Overview",
+    items: [
+      { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+      { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+    ],
+  },
+  {
+    title: "Shop",
+    items: [
+      { label: "Categories", href: "/admin/categories", icon: FolderTree },
+      { label: "Products", href: "/admin/products", icon: Package },
+      { label: "Orders", href: "/admin/orders", icon: ShoppingCart, badgeKey: "orders" },
+      { label: "Quote Requests", href: "/admin/quotes", icon: ShoppingCart },
+    ],
+  },
+  {
+    title: "Content",
+    items: [
+      { label: "Blog / News", href: "/admin/posts", icon: FileText },
+      { label: "Downloads", href: "/admin/downloads", icon: Download },
+      { label: "Gallery", href: "/admin/gallery", icon: Images },
+      { label: "Events", href: "/admin/events", icon: Calendar },
+      { label: "Banners", href: "/admin/banners", icon: Image },
+    ],
+  },
+  {
+    title: "Communication",
+    items: [
+      { label: "Inquiries", href: "/admin/inquiries", icon: MessageSquare },
+      { label: "Newsletter", href: "/admin/newsletter", icon: Mail },
+      { label: "Resumes", href: "/admin/resumes", icon: Briefcase },
+    ],
+  },
+  {
+    title: "Company",
+    items: [
+      { label: "Global Offices", href: "/admin/offices", icon: Globe },
+      { label: "Company History", href: "/admin/company-history", icon: History },
+      { label: "Team Members", href: "/admin/team-members", icon: UserCircle },
+    ],
+  },
+  {
+    title: "System",
+    items: [
+      { label: "Users", href: "/admin/users", icon: Users },
+      { label: "Settings", href: "/admin/settings", icon: Settings },
+    ],
+  },
 ];
 
 type NavBadges = {
@@ -153,27 +188,44 @@ export function AdminSidebar({ mobileOpen = false, onClose }: AdminSidebarProps)
         </button>
       </div>
 
-      <nav className="flex-1 p-3 sm:p-4 space-y-0.5 overflow-y-auto overscroll-contain">
-        {menuItems.map((item) => {
-          const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onClose}
-              className={cn(
-                "flex items-center gap-3 px-3 py-3 lg:py-2.5 rounded-sm text-sm transition-colors",
-                isActive
-                  ? "bg-brand-accent text-brand-navy font-medium"
-                  : "text-white/60 hover:text-white hover:bg-brand-accent/10"
-              )}
-            >
-              <item.icon className="w-4 h-4 shrink-0" />
-              <span className="truncate flex-1 min-w-0">{item.label}</span>
-              {item.badgeKey && <NavBadge count={badges[item.badgeKey]} active={isActive} />}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 p-3 sm:p-4 overflow-y-auto overscroll-contain">
+        {menuSections.map((section, sectionIndex) => (
+          <div
+            key={section.title}
+            className={cn(sectionIndex > 0 && "mt-5 pt-4 border-t border-white/10")}
+          >
+            <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-wider text-white/35">
+              {section.title}
+            </p>
+            <div className="space-y-0.5">
+              {section.items.map((item) => {
+                const isActive =
+                  pathname === item.href ||
+                  (item.href !== "/admin" && pathname.startsWith(item.href));
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onClose}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-3 lg:py-2.5 rounded-sm text-sm transition-colors",
+                      isActive
+                        ? "bg-brand-accent text-brand-navy font-medium"
+                        : "text-white/60 hover:text-white hover:bg-brand-accent/10"
+                    )}
+                  >
+                    <item.icon className="w-4 h-4 shrink-0" />
+                    <span className="truncate flex-1 min-w-0">{item.label}</span>
+                    {item.badgeKey && (
+                      <NavBadge count={badges[item.badgeKey]} active={isActive} />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
       <div className="p-4 border-t border-white/10">

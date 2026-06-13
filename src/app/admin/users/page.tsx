@@ -184,7 +184,7 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
-  const { confirm, alert } = useConfirmDialog();
+  const { confirm, showAlert } = useConfirmDialog();
   const panel = useAdminListPanel<User>();
 
   const fetchData = async () => {
@@ -229,7 +229,7 @@ export default function AdminUsersPage() {
         });
         if (!res.ok) {
           const data = await res.json();
-          await alert({ variant: "error", message: data.error || "Failed to update user" });
+          await showAlert({ variant: "error", message: data.error || "Failed to update user" });
           return;
         }
         const saved = await res.json();
@@ -251,7 +251,7 @@ export default function AdminUsersPage() {
         });
         if (!res.ok) {
           const data = await res.json();
-          await alert({ variant: "error", message: data.error || "Failed to create user" });
+          await showAlert({ variant: "error", message: data.error || "Failed to create user" });
           return;
         }
         await fetchData();
@@ -264,7 +264,7 @@ export default function AdminUsersPage() {
 
   const handleDelete = async (user: User) => {
     if (user.role === "SUPER_ADMIN") {
-      await alert({ variant: "warning", message: "Super admin account cannot be deleted" });
+      await showAlert({ variant: "warning", message: "Super admin account cannot be deleted" });
       return;
     }
     const ok = await confirm({
@@ -275,7 +275,7 @@ export default function AdminUsersPage() {
     const res = await fetch(`/api/admin/users/${user.id}`, { method: "DELETE" });
     if (!res.ok) {
       const data = await res.json();
-      await alert({ variant: "error", message: data.error || "Failed to delete user" });
+      await showAlert({ variant: "error", message: data.error || "Failed to delete user" });
       return;
     }
     if (panel.selected?.id === user.id) panel.closePanel();

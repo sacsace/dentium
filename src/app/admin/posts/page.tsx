@@ -19,6 +19,7 @@ import {
   POST_STATUS_ACTIVE,
   POST_STATUS_INACTIVE,
   postStatusToFormValue,
+  type PostStatusValue,
 } from "@/lib/post-status";
 
 const RichTextEditor = dynamic(
@@ -45,7 +46,7 @@ interface PostDetail extends Post {
 }
 
 const EMPTY_FORM = {
-  title: "", excerpt: "", content: "", type: "BLOG", status: POST_STATUS_ACTIVE,
+  title: "", excerpt: "", content: "", type: "BLOG", status: POST_STATUS_ACTIVE as PostStatusValue,
   featuredImage: "", tags: "", isFeatured: false, isPopular: false,
   seoTitle: "", seoDescription: "",
 };
@@ -122,7 +123,7 @@ function PostFormFields({
           </select>
         </FormField>
         <FormField label="Status">
-          <select className={inputClass} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
+          <select className={inputClass} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as PostStatusValue })}>
             <option value={POST_STATUS_ACTIVE}>Active</option>
             <option value={POST_STATUS_INACTIVE}>Inactive</option>
           </select>
@@ -180,7 +181,7 @@ export default function AdminPostsPage() {
   const [formLoading, setFormLoading] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [editorKey, setEditorKey] = useState(0);
-  const { confirm, alert } = useConfirmDialog();
+  const { confirm, showAlert } = useConfirmDialog();
   const panel = useAdminListPanel<Post>();
 
   const fetchData = async () => {
@@ -246,7 +247,7 @@ export default function AdminPostsPage() {
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      await alert({ variant: "error", message: data.error || "Failed to save post" });
+      await showAlert({ variant: "error", message: data.error || "Failed to save post" });
       return;
     }
 
