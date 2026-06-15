@@ -147,19 +147,22 @@ export default function AdminOrdersPage() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [activeTab, setActiveTab] = useState<OrderListTab>("received");
   const [keyword, setKeyword] = useState("");
+  const [deletedLoaded, setDeletedLoaded] = useState(false);
 
   const loadOrders = useCallback(() => {
     fetch("/api/admin/orders").then((r) => r.json()).then(setOrders);
   }, []);
 
   const loadDeletedOrders = useCallback(() => {
-    fetch("/api/admin/deleted-orders").then((r) => r.json()).then(setDeletedOrders);
+    fetch("/api/admin/deleted-orders").then((r) => r.json()).then((data) => {
+      setDeletedOrders(data);
+      setDeletedLoaded(true);
+    });
   }, []);
 
   useEffect(() => {
     loadOrders();
-    loadDeletedOrders();
-  }, [loadOrders, loadDeletedOrders]);
+  }, [loadOrders]);
 
   const tabCounts = useMemo(() => {
     const counts: Record<OrderListTab, number> = { received: 0, completed: 0, deleted: deletedOrders.length };
@@ -189,6 +192,9 @@ export default function AdminOrdersPage() {
   const handleTabChange = (tab: OrderListTab) => {
     setActiveTab(tab);
     closeDetail();
+    if (tab === "deleted" && !deletedLoaded) {
+      loadDeletedOrders();
+    }
   };
 
   const openOrder = async (item: Order) => {

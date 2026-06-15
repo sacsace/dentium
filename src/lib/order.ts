@@ -57,11 +57,6 @@ export const ORDER_TAB_RECEIVED_STATUSES: OrderStatus[] = [
 
 export const ORDER_TAB_COMPLETED_STATUSES: OrderStatus[] = ["DELIVERED"];
 
-/** Any active order can be archived to the deleted records tab */
-export function isOrderDeletable(_status: OrderStatus): boolean {
-  return true;
-}
-
 export const ORDER_TAB_LABELS: Record<OrderListTab, string> = {
   received: "Received Orders",
   completed: "Completed Sales",

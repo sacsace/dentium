@@ -14,17 +14,33 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Name, email, and items are required" }, { status: 400 });
     }
 
+    const orderItemsInput = items as { productId?: string; quantity?: number }[];
+    const productIds = Array.from(
+      new Set(
+        orderItemsInput
+          .map((item) => item.productId)
+          .filter((id): id is string => typeof id === "string" && id.length > 0)
+      )
+    );
+    const products = await prisma.product.findMany({
+      where: { id: { in: productIds } },
+      select: { id: true, price: true },
+    });
+    const productMap = new Map(products.map((product) => [product.id, product]));
+
     let subtotal = 0;
     const orderItems: { productId: string; quantity: number; price: Prisma.Decimal | null }[] = [];
 
-    for (const item of items) {
-      const product = await prisma.product.findUnique({ where: { id: item.productId } });
+    for (const item of orderItemsInput) {
+      if (!item.productId) continue;
+      const product = productMap.get(item.productId);
       if (!product) continue;
+      const quantity = item.quantity && item.quantity > 0 ? item.quantity : 1;
       const unitPrice = product.price != null ? Number(product.price) : 0;
-      subtotal += unitPrice * item.quantity;
+      subtotal += unitPrice * quantity;
       orderItems.push({
         productId: item.productId,
-        quantity: item.quantity,
+        quantity,
         price: product.price,
       });
     }

@@ -57,26 +57,29 @@ export default function CartPage() {
     if (!appliedCouponCode || isQuote || subtotal <= 0) return;
 
     let cancelled = false;
-    fetch("/api/coupons/validate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: appliedCouponCode, subtotal }),
-    })
-      .then(async (res) => {
-        const data = await res.json();
-        if (cancelled) return;
-        if (!res.ok) {
-          setAppliedCoupon(null);
-          setCouponError(data.error || "Coupon is no longer valid");
-          return;
-        }
-        setAppliedCoupon(data);
-        setCouponError("");
+    const timer = window.setTimeout(() => {
+      fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: appliedCouponCode, subtotal }),
       })
-      .catch(() => undefined);
+        .then(async (res) => {
+          const data = await res.json();
+          if (cancelled) return;
+          if (!res.ok) {
+            setAppliedCoupon(null);
+            setCouponError(data.error || "Coupon is no longer valid");
+            return;
+          }
+          setAppliedCoupon(data);
+          setCouponError("");
+        })
+        .catch(() => undefined);
+    }, 400);
 
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
     };
   }, [subtotal, appliedCouponCode, isQuote]);
 

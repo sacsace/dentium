@@ -4,6 +4,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { organizationSchema } from "@/lib/seo-schemas";
 import { VisitTracker } from "@/components/analytics/VisitTracker";
 import { CartAuthSync } from "@/components/cart/CartAuthSync";
+import { FavoritesProvider } from "@/components/favorites/FavoritesProvider";
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -11,9 +12,11 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <JsonLd data={organizationSchema()} />
       <VisitTracker />
       <CartAuthSync />
-      <Header />
-      <main className="min-h-screen">{children}</main>
-      <Footer />
+      <FavoritesProvider>
+        <Header />
+        <main className="min-h-screen">{children}</main>
+        <Footer />
+      </FavoritesProvider>
     </>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useFavorites } from "@/hooks/useFavorites";
@@ -11,7 +12,11 @@ interface ProductLikeButtonProps {
   iconClassName?: string;
 }
 
-export function ProductLikeButton({ productId, className, iconClassName }: ProductLikeButtonProps) {
+export const ProductLikeButton = memo(function ProductLikeButton({
+  productId,
+  className,
+  iconClassName,
+}: ProductLikeButtonProps) {
   const router = useRouter();
   const { isLoggedIn, isLiked, toggleLike } = useFavorites();
   const liked = isLiked(productId);
@@ -48,4 +53,4 @@ export function ProductLikeButton({ productId, className, iconClassName }: Produ
       />
     </button>
   );
-}
+});
