@@ -7,6 +7,7 @@ import { getSession } from "@/lib/auth";
 import { ProductCard } from "@/components/products/ProductCard";
 import { AddToCartButton } from "@/components/products/AddToCartButton";
 import { RequestQuoteButton } from "@/components/products/RequestQuoteButton";
+import { ProductLikeButton } from "@/components/products/ProductLikeButton";
 import { toClientProduct, getProductPriceLabel } from "@/lib/product-client";
 import { getShopBackHref, type ShopFilterParams } from "@/lib/shop-navigation";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -114,9 +115,10 @@ export default async function ProductDetailPage({ params, searchParams }: Props)
               )}
 
               {session && (
-              <div className="flex flex-wrap gap-3 mb-8">
+              <div className="flex flex-wrap items-center gap-3 mb-8">
                 <AddToCartButton product={clientProduct} />
                 <RequestQuoteButton productId={product.id} productName={product.name} />
+                <ProductLikeButton productId={product.id} className="shadow-sm border border-gray-100" iconClassName="w-5 h-5" />
               </div>
               )}
 

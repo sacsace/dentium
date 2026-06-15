@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { formatDate, formatPrice } from "@/lib/utils";
 import Link from "next/link";
 import { AccountProfileForm } from "@/components/account/AccountProfileForm";
+import { FavoriteProductsSection } from "@/components/account/FavoriteProductsSection";
 
 export const metadata = staticPageMetadata("account");
 
@@ -66,6 +67,8 @@ export default async function AccountPage() {
       <section className="py-16">
         <div className="container mx-auto px-4 lg:px-8">
           {profile && <AccountProfileForm profile={profile} />}
+
+          <FavoriteProductsSection />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
             <div className="bg-brand-gray p-6 rounded-xl text-center">

@@ -4,11 +4,21 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Trash2, Minus, Plus, ArrowLeft, FileText } from "lucide-react";
+import { Trash2, Minus, Plus, ArrowLeft, FileText, Tag, X } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { Button } from "@/components/ui/Button";
 import { formatPrice } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { formatDiscountLabel, type DiscountType } from "@/lib/coupon-utils";
+
+type AppliedCoupon = {
+  code: string;
+  discountAmount: number;
+  subtotal: number;
+  total: number;
+  discountType: DiscountType;
+  discountValue: number;
+};
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, clearCart, getTotalPrice } = useCartStore();
@@ -17,6 +27,12 @@ export default function CartPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", company: "", message: "" });
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
+  const [couponError, setCouponError] = useState("");
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
+
+  const subtotal = getTotalPrice();
 
   useEffect(() => {
     fetch("/api/auth/profile")
@@ -35,6 +51,71 @@ export default function CartPage() {
       .catch(() => undefined);
   }, []);
 
+  const appliedCouponCode = appliedCoupon?.code;
+
+  useEffect(() => {
+    if (!appliedCouponCode || isQuote || subtotal <= 0) return;
+
+    let cancelled = false;
+    fetch("/api/coupons/validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: appliedCouponCode, subtotal }),
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (cancelled) return;
+        if (!res.ok) {
+          setAppliedCoupon(null);
+          setCouponError(data.error || "Coupon is no longer valid");
+          return;
+        }
+        setAppliedCoupon(data);
+        setCouponError("");
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [subtotal, appliedCouponCode, isQuote]);
+
+  const handleApplyCoupon = async () => {
+    if (!couponInput.trim()) {
+      setCouponError("Please enter a coupon code");
+      return;
+    }
+
+    setApplyingCoupon(true);
+    setCouponError("");
+
+    try {
+      const res = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: couponInput, subtotal }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setAppliedCoupon(null);
+        setCouponError(data.error || "Invalid coupon code");
+        return;
+      }
+      setAppliedCoupon(data);
+      setCouponInput(data.code);
+    } catch {
+      setCouponError("Failed to apply coupon. Please try again.");
+    } finally {
+      setApplyingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponInput("");
+    setCouponError("");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -43,11 +124,19 @@ export default function CartPage() {
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })) }),
+        body: JSON.stringify({
+          ...form,
+          couponCode: !isQuote && appliedCoupon ? appliedCoupon.code : undefined,
+          items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+        }),
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setSubmitted(true);
         clearCart();
+        setAppliedCoupon(null);
+      } else {
+        alert(data.error || "Failed to submit. Please try again.");
       }
     } catch {
       alert("Failed to submit. Please try again.");
@@ -55,6 +144,10 @@ export default function CartPage() {
       setSubmitting(false);
     }
   };
+
+  const estimatedTotal = !isQuote && subtotal > 0
+    ? appliedCoupon?.total ?? subtotal
+    : 0;
 
   if (submitted) {
     return (
@@ -171,10 +264,69 @@ export default function CartPage() {
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-brand-deep resize-none"
                   />
 
-                  {!isQuote && getTotalPrice() > 0 && (
-                    <div className="flex justify-between text-sm font-medium pt-2 border-t">
-                      <span>Estimated Total</span>
-                      <span className="text-brand-deep">{formatPrice(getTotalPrice())}</span>
+                  {!isQuote && subtotal > 0 && (
+                    <div className="space-y-3 pt-2 border-t">
+                      <div>
+                        <label className="text-sm font-medium text-brand-navy flex items-center gap-1.5 mb-2">
+                          <Tag className="w-4 h-4" /> Coupon Code
+                        </label>
+                        {appliedCoupon ? (
+                          <div className="flex items-center justify-between gap-2 p-3 bg-white border border-brand-deep/20 rounded-sm">
+                            <div>
+                              <p className="text-sm font-medium text-brand-navy">{appliedCoupon.code}</p>
+                              <p className="text-xs text-brand-silver">
+                                {formatDiscountLabel(appliedCoupon.discountType, appliedCoupon.discountValue)} applied
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={handleRemoveCoupon}
+                              className="p-1 text-brand-silver hover:text-red-500"
+                              aria-label="Remove coupon"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <input
+                              placeholder="Enter code"
+                              value={couponInput}
+                              onChange={(e) => {
+                                setCouponInput(e.target.value.toUpperCase());
+                                setCouponError("");
+                              }}
+                              className="flex-1 px-4 py-2.5 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-brand-deep uppercase"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={handleApplyCoupon}
+                              disabled={applyingCoupon}
+                            >
+                              {applyingCoupon ? "..." : "Apply"}
+                            </Button>
+                          </div>
+                        )}
+                        {couponError && <p className="text-xs text-red-600 mt-1">{couponError}</p>}
+                      </div>
+
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-brand-silver">Subtotal</span>
+                          <span>{formatPrice(subtotal)}</span>
+                        </div>
+                        {appliedCoupon && appliedCoupon.discountAmount > 0 && (
+                          <div className="flex justify-between text-green-700">
+                            <span>Discount</span>
+                            <span>-{formatPrice(appliedCoupon.discountAmount)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between font-medium pt-1 border-t">
+                          <span>Estimated Total</span>
+                          <span className="text-brand-deep">{formatPrice(estimatedTotal)}</span>
+                        </div>
+                      </div>
                     </div>
                   )}
 

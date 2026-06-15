@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ShoppingCart, Sparkles, LogIn } from "lucide-react";
 import { useCartStore } from "@/store/cart";
+import { ProductLikeButton } from "@/components/products/ProductLikeButton";
 import type { ClientProduct } from "@/lib/product-client";
 import { getCartUnitPrice, getProductPriceLabel } from "@/lib/product-client";
 import { buildProductHref, type ShopFilterParams } from "@/lib/shop-navigation";
@@ -49,6 +50,7 @@ export function ProductCard({ product, isLoggedIn = false, fromShop, shopFilters
             <Sparkles className="w-3 h-3" /> New
           </span>
         )}
+        <ProductLikeButton productId={product.id} className="absolute top-3 right-3" />
         {isLoggedIn && (
           <button
             type="button"

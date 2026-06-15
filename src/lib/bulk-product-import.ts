@@ -8,7 +8,7 @@ import {
 } from "@/lib/csv-import";
 
 async function uniqueProductSlug(base: string): Promise<string> {
-  let slug = slugify(base, { lower: true, strict: true }) || "product";
+  const slug = slugify(base, { lower: true, strict: true }) || "product";
   let candidate = slug;
   let index = 2;
 
@@ -124,6 +124,3 @@ export async function importProductsFromCsv(csv: string): Promise<BulkImportResu
 
   return { created, failed };
 }
-
-export const PRODUCT_IMPORT_TEMPLATE = `name,category,sku,description,shortDesc,brand,price,showPrice,isFeatured,isNew,isActive,tags,features,images
-Sample Product,Categories 1,SKU-001,Full product description,Short summary,Dentium,499,true,false,true,true,"tag1, tag2",Feature 1|Feature 2,https://example.com/image.jpg`;

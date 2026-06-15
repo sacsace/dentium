@@ -80,6 +80,7 @@ export type OrderSearchable = {
   guestEmail?: string | null;
   guestPhone?: string | null;
   guestCompany?: string | null;
+  couponCode?: string | null;
   status?: OrderStatus;
   notes?: string | null;
   user?: { name?: string | null; email?: string | null; company?: string | null } | null;
@@ -97,6 +98,7 @@ export function orderMatchesKeyword(order: OrderSearchable, query: string): bool
     order.guestPhone ?? "",
     order.guestCompany ?? "",
     order.notes ?? "",
+    order.couponCode ?? "",
     order.user?.name ?? "",
     order.user?.email ?? "",
     order.user?.company ?? "",

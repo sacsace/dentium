@@ -24,6 +24,7 @@ import {
   History,
   UserCircle,
   X,
+  Tag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { clearCartOnLogout } from "@/components/cart/CartAuthSync";
@@ -54,6 +55,7 @@ const menuSections: MenuSection[] = [
     items: [
       { label: "Categories", href: "/admin/categories", icon: FolderTree },
       { label: "Products", href: "/admin/products", icon: Package },
+      { label: "Coupons", href: "/admin/coupons", icon: Tag },
       { label: "Orders", href: "/admin/orders", icon: ShoppingCart, badgeKey: "orders" },
       { label: "Quote Requests", href: "/admin/quotes", icon: ShoppingCart },
     ],

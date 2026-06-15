@@ -124,7 +124,7 @@
 
 **관리자 계정 (시드):**
 
-- URL: `http://localhost:3000/admin`
+- URL: `http://localhost:3200/admin`
 - ID: `root`
 - Password: `admin123`
 
@@ -238,7 +238,7 @@ NEXT_PUBLIC_APP_URL="https://www.dentium.in"
 NEXT_PUBLIC_APP_NAME="Dentium"
 ```
 
-로컬 개발 시에도 위 URL을 쓰면 sitemap·canonical·OG URL이 프로덕션 도메인으로 생성됩니다. 로컬 전용으로 쓰려면 `http://localhost:3000`으로 변경하세요.
+로컬 개발 시에도 위 URL을 쓰면 sitemap·canonical·OG URL이 프로덕션 도메인으로 생성됩니다. 로컬 전용으로 쓰려면 `http://localhost:3200`으로 변경하세요.
 
 ### 7.2 설치 및 실행
 
@@ -259,7 +259,7 @@ $env:NODE_ENV=$null
 npm run dev
 ```
 
-→ [http://localhost:3000](http://localhost:3000)
+→ [http://localhost:3200](http://localhost:3200)
 
 ### 7.3 npm scripts
 

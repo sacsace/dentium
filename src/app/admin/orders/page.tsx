@@ -16,7 +16,7 @@ import {
   getDeletedOrderCustomerEmail,
   getDeletedOrderCustomerName,
   type DeletedOrderItemSnapshot,
-} from "@/lib/deleted-order";
+} from "@/lib/deleted-order-utils";
 import {
   formatOrderAmount,
   getCustomerEmail,
@@ -51,6 +51,9 @@ interface Order {
   guestCompany: string | null;
   status: OrderStatus;
   notes: string | null;
+  subtotalAmount?: string | number | null;
+  discountAmount?: string | number | null;
+  couponCode?: string | null;
   totalAmount: string | number | null;
   createdAt: string;
   updatedAt: string;
@@ -69,6 +72,9 @@ interface DeletedOrderRecord {
   customerEmail: string | null;
   status: OrderStatus;
   notes: string | null;
+  subtotalAmount?: string | number | null;
+  discountAmount?: string | number | null;
+  couponCode?: string | null;
   totalAmount: string | number | null;
   items: DeletedOrderItemSnapshot[];
   orderCreatedAt: string;
@@ -412,6 +418,20 @@ export default function AdminOrdersPage() {
                     <span className="text-brand-silver">Total Amount</span>
                     <p className="font-medium">{formatOrderAmount(selectedActive.totalAmount)}</p>
                   </div>
+                  {selectedActive.couponCode && (
+                    <>
+                      <div>
+                        <span className="text-brand-silver">Coupon</span>
+                        <p className="font-medium">{selectedActive.couponCode}</p>
+                      </div>
+                      <div>
+                        <span className="text-brand-silver">Discount</span>
+                        <p className="font-medium text-green-700">
+                          -{formatOrderAmount(selectedActive.discountAmount)}
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {selectedActive.notes && (

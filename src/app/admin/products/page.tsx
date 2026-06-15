@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { Plus, Upload } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { BulkImportModal } from "@/components/admin/BulkImportModal";
-import { PRODUCT_IMPORT_TEMPLATE } from "@/lib/bulk-product-import";
+import { PRODUCT_IMPORT_TEMPLATE } from "@/lib/bulk-import-templates";
 import { AdminDetailPanel, AdminPageHeader, AdminPanelBreadcrumb } from "@/components/admin/AdminPageHeader";
 import { cn } from "@/lib/utils";
 import { DataTable } from "@/components/admin/DataTable";

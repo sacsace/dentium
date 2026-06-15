@@ -8,7 +8,7 @@ import {
 } from "@/lib/csv-import";
 
 async function uniqueCategorySlug(base: string): Promise<string> {
-  let slug = slugify(base, { lower: true, strict: true }) || "category";
+  const slug = slugify(base, { lower: true, strict: true }) || "category";
   let candidate = slug;
   let index = 2;
 
@@ -82,7 +82,3 @@ export async function importCategoriesFromCsv(csv: string): Promise<BulkImportRe
 
   return { created, failed };
 }
-
-export const CATEGORY_IMPORT_TEMPLATE = `name,description,image,sortOrder,isActive
-Categories 1,First category,,0,true
-Categories 2,Second category,,1,true`;

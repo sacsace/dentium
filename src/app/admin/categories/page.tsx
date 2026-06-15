@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Plus, Upload } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { BulkImportModal } from "@/components/admin/BulkImportModal";
-import { CATEGORY_IMPORT_TEMPLATE } from "@/lib/bulk-category-import";
+import { CATEGORY_IMPORT_TEMPLATE } from "@/lib/bulk-import-templates";
 import { DataTable } from "@/components/admin/DataTable";
 import { AdminInlineForm, FormField, inputClass } from "@/components/admin/AdminForm";
 import { AdminDetailPanel, AdminPageHeader, AdminPanelBreadcrumb } from "@/components/admin/AdminPageHeader";
@@ -135,6 +135,41 @@ export default function AdminCategoriesPage() {
     }
   };
 
+  const handleBulkDelete = async (items: Category[]) => {
+    const ok = await confirm({
+      title: "Delete categories",
+      message: `${items.length} categor${items.length === 1 ? "y" : "ies"} will be permanently deleted. Categories linked to products cannot be deleted.`,
+      confirmLabel: "Delete",
+    });
+    if (!ok) return;
+
+    const results = await Promise.all(
+      items.map(async (category) => {
+        const res = await fetch(`/api/admin/categories/${category.id}`, { method: "DELETE" });
+        const data = await res.json().catch(() => ({}));
+        return { category, ok: res.ok, error: data.error as string | undefined };
+      })
+    );
+
+    const failed = results.filter((r) => !r.ok);
+    const deletedIds = new Set(results.filter((r) => r.ok).map((r) => r.category.id));
+
+    if (panel.selected && deletedIds.has(panel.selected.id)) panel.closePanel();
+    await fetchData();
+
+    if (failed.length > 0) {
+      const lines = failed.map((r) => `• ${r.category.name}: ${r.error ?? "Delete failed"}`);
+      await showAlert({
+        variant: "error",
+        title: "Could not delete selected categor(ies)",
+        message:
+          failed.length === items.length
+            ? lines.join("\n")
+            : `${items.length - failed.length} deleted, ${failed.length} failed:\n\n${lines.join("\n")}`,
+      });
+    }
+  };
+
   const itemLabel = panel.selected?.name ?? "Details";
   const breadcrumbItems = buildAdminBreadcrumbItems(
     "Categories",
@@ -172,6 +207,9 @@ export default function AdminCategoriesPage() {
             onEdit={panel.openView}
             onDelete={handleDelete}
             selectedRowId={panel.activeRowId}
+            selectable
+            onBulkDelete={handleBulkDelete}
+            bulkDeleteLabel="Delete categories"
           />
         }
         panel={
