@@ -2,11 +2,18 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Sparkles, LogIn } from "lucide-react";
+import { ArrowRight, Sparkles, LogIn, ShieldCheck } from "lucide-react";
 import { AnimatedSection } from "@/components/ui/AnimatedSection";
 import { getProductPriceLabel, type ClientProduct } from "@/lib/product-client";
+import type { PriceAccess } from "@/lib/membership";
 
-export function FeaturedProducts({ products, isLoggedIn = false }: { products: ClientProduct[]; isLoggedIn?: boolean }) {
+export function FeaturedProducts({
+  products,
+  priceAccess = "guest",
+}: {
+  products: ClientProduct[];
+  priceAccess?: PriceAccess;
+}) {
   return (
     <section className="py-24 bg-brand-gray">
       <div className="container mx-auto px-4 lg:px-8">
@@ -39,14 +46,16 @@ export function FeaturedProducts({ products, isLoggedIn = false }: { products: C
                   {product.shortDesc && (
                     <p className="text-brand-silver text-sm mb-3 line-clamp-2">{product.shortDesc}</p>
                   )}
-                  {!isLoggedIn ? (
+                  {priceAccess === "full" ? (
+                    <p className="text-brand-deep font-medium text-sm">{getProductPriceLabel(product, priceAccess)}</p>
+                  ) : priceAccess === "associate" ? (
+                    <span className="inline-flex items-center gap-1.5 text-brand-deep font-medium text-sm">
+                      <ShieldCheck className="w-3.5 h-3.5" /> Full membership required
+                    </span>
+                  ) : (
                     <span className="inline-flex items-center gap-1.5 text-brand-deep font-medium text-sm">
                       <LogIn className="w-3.5 h-3.5" /> Login for Price
                     </span>
-                  ) : (
-                    <p className="text-brand-deep font-medium text-sm">
-                      {getProductPriceLabel(product, isLoggedIn)}
-                    </p>
                   )}
                 </div>
               </Link>

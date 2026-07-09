@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
 import { toClientProduct } from "@/lib/product-client";
 import { HeroBanner } from "@/components/home/HeroBanner";
 import { StatsSection } from "@/components/home/StatsSection";
@@ -14,7 +13,8 @@ import { NewsletterSection } from "@/components/home/NewsletterSection";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { buildMetadata, getSiteSeoSettings, STATIC_SEO } from "@/lib/seo";
 import { websiteSchema } from "@/lib/seo-schemas";
-import { HERO_SLIDES } from "@/lib/site-config";
+import { getHeroSlides } from "@/lib/hero-slides";
+import { getServerPriceContext } from "@/lib/session-price";
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSeoSettings();
@@ -57,18 +57,18 @@ async function getHomeData() {
 }
 
 export default async function HomePage() {
-  const session = await getSession();
-  const data = await getHomeData();
+  const { priceAccess } = await getServerPriceContext();
+  const [data, heroSlides] = await Promise.all([getHomeData(), getHeroSlides()]);
 
   return (
     <>
       <JsonLd data={websiteSchema()} />
-      <HeroBanner slides={HERO_SLIDES} />
+      <HeroBanner slides={heroSlides} />
       <StatsSection />
       {data.categories.length > 0 && <ProductCategories categories={data.categories} />}
       <ParallaxBreak />
       {data.products.length > 0 && (
-        <FeaturedProducts products={data.products.map(toClientProduct)} isLoggedIn={!!session} />
+        <FeaturedProducts products={data.products.map(toClientProduct)} priceAccess={priceAccess} />
       )}
       {data.events.length > 0 && <EventsSection events={data.events} />}
       {data.studyPosts.length > 0 ? (

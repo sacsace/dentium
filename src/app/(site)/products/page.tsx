@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { ProductCard } from "@/components/products/ProductCard";
 import { AnimatedSection } from "@/components/ui/AnimatedSection";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getServerPriceContext } from "@/lib/session-price";
 import { toClientProduct } from "@/lib/product-client";
 import Link from "next/link";
 
@@ -15,7 +15,7 @@ interface Props {
 
 export default async function ProductsPage({ searchParams }: Props) {
   const params = await searchParams;
-  const session = await getSession();
+  const { priceAccess, isLoggedIn } = await getServerPriceContext();
   const where: Record<string, unknown> = { isActive: true };
 
   if (params.category) {
@@ -49,7 +49,7 @@ export default async function ProductsPage({ searchParams }: Props) {
 
   try {
     [products, categories] = await Promise.all([
-      prisma.product.findMany({ where, include: { category: true }, orderBy: { sortOrder: "asc" } }),
+      prisma.product.findMany({ where, include: { category: true, _count: { select: { likes: true } } }, orderBy: { sortOrder: "asc" } }),
       prisma.category.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } }),
     ]);
   } catch {
@@ -94,7 +94,7 @@ export default async function ProductsPage({ searchParams }: Props) {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {products.map((product, i) => (
                 <AnimatedSection key={product.id} delay={i * 0.05}>
-                  <ProductCard product={toClientProduct(product)} isLoggedIn={!!session} />
+                  <ProductCard product={toClientProduct(product)} priceAccess={priceAccess} isLoggedIn={isLoggedIn} likeCount={(product as { _count?: { likes: number } })._count?.likes ?? 0} />
                 </AnimatedSection>
               ))}
             </div>

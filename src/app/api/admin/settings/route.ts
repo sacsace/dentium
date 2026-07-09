@@ -8,6 +8,7 @@ const SETTINGS_FIELDS = [
   "contactEmail", "contactPhone", "contactAddress",
   "socialLinkedin", "socialYoutube", "socialTwitter", "socialInstagram",
   "seoTitle", "seoDescription", "seoKeywords", "heroVideoUrl",
+  "whatsappNumber", "whatsappMessage", "blogNotifyOnPublish",
   "smtpHost", "smtpPort", "smtpUser", "smtpFromEmail", "smtpFromName", "smtpSecure",
 ] as const;
 
@@ -46,6 +47,17 @@ export async function PUT(req: NextRequest) {
 
   if (typeof update.smtpHost === "string" && update.smtpHost.trim()) {
     update.smtpHost = normalizeSmtpHost(update.smtpHost);
+  }
+
+  if (Array.isArray(data.searchSuggestions)) {
+    update.searchSuggestions = data.searchSuggestions
+      .filter((s: unknown) => typeof s === "string" && s.trim())
+      .map((s: string) => s.trim());
+  } else if (typeof data.searchSuggestionsText === "string") {
+    update.searchSuggestions = data.searchSuggestionsText
+      .split("\n")
+      .map((s: string) => s.trim())
+      .filter(Boolean);
   }
 
   const settings = await prisma.siteSettings.upsert({

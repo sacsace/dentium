@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { FormField, inputClass } from "@/components/admin/AdminForm";
 
-type SettingsTab = "general" | "smtp" | "seo";
+type SettingsTab = "general" | "marketing" | "smtp" | "seo";
 
 const TABS: { id: SettingsTab; label: string }[] = [
   { id: "general", label: "General" },
+  { id: "marketing", label: "Marketing" },
   { id: "smtp", label: "SMTP" },
   { id: "seo", label: "SEO" },
 ];
@@ -37,6 +38,10 @@ const EMPTY_FORM = {
   smtpFromName: "",
   smtpSecure: false,
   hasSmtpPass: false,
+  whatsappNumber: "",
+  whatsappMessage: "",
+  searchSuggestionsText: "",
+  blogNotifyOnPublish: false,
 };
 
 function normalizeSettingsForm(data: Record<string, unknown>) {
@@ -71,6 +76,12 @@ function normalizeSettingsForm(data: Record<string, unknown>) {
     smtpFromName: str("smtpFromName"),
     smtpSecure: Boolean(data.smtpSecure),
     hasSmtpPass: Boolean(data.hasSmtpPass),
+    whatsappNumber: str("whatsappNumber"),
+    whatsappMessage: str("whatsappMessage"),
+    searchSuggestionsText: Array.isArray(data.searchSuggestions)
+      ? (data.searchSuggestions as string[]).join("\n")
+      : "",
+    blogNotifyOnPublish: Boolean(data.blogNotifyOnPublish),
   };
 }
 
@@ -208,6 +219,52 @@ export default function AdminSettingsPage() {
                     <textarea className={inputClass} rows={3} value={form.aboutVision} onChange={(e) => setForm({ ...form, aboutVision: e.target.value })} />
                   </FormField>
                 </div>
+              </section>
+            </div>
+          )}
+
+          {activeTab === "marketing" && (
+            <div className="max-w-2xl space-y-6">
+              <section className="space-y-4">
+                <h3 className="font-semibold text-brand-navy text-base border-b border-gray-100 pb-2">WhatsApp</h3>
+                <FormField label="WhatsApp Number">
+                  <input
+                    className={inputClass}
+                    placeholder="+91 98765 43210"
+                    value={form.whatsappNumber}
+                    onChange={(e) => setForm({ ...form, whatsappNumber: e.target.value })}
+                  />
+                  <p className="text-xs text-brand-silver mt-1">Include country code. Shows a floating chat button on the site.</p>
+                </FormField>
+                <FormField label="Default Message">
+                  <input
+                    className={inputClass}
+                    value={form.whatsappMessage}
+                    onChange={(e) => setForm({ ...form, whatsappMessage: e.target.value })}
+                  />
+                </FormField>
+              </section>
+              <section className="space-y-4">
+                <h3 className="font-semibold text-brand-navy text-base border-b border-gray-100 pb-2">Search</h3>
+                <FormField label="Recommended Search Terms (one per line)">
+                  <textarea
+                    className={inputClass}
+                    rows={5}
+                    value={form.searchSuggestionsText}
+                    onChange={(e) => setForm({ ...form, searchSuggestionsText: e.target.value })}
+                  />
+                </FormField>
+              </section>
+              <section className="space-y-4">
+                <h3 className="font-semibold text-brand-navy text-base border-b border-gray-100 pb-2">Blog Notifications</h3>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={form.blogNotifyOnPublish}
+                    onChange={(e) => setForm({ ...form, blogNotifyOnPublish: e.target.checked })}
+                  />
+                  Email newsletter subscribers when a blog or news post is published
+                </label>
               </section>
             </div>
           )}

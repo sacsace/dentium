@@ -49,6 +49,8 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       isFeatured: data.isFeatured,
       isNew: data.isNew,
       isActive: data.isActive,
+      productType: data.productType === "BUNDLE" ? "BUNDLE" : "SIMPLE",
+      gstRate: data.gstRate != null && data.gstRate !== "" ? parseFloat(data.gstRate) : 18,
       categoryId: data.categoryId,
       seoTitle: data.seoTitle,
       seoDescription: data.seoDescription,

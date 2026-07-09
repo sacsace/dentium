@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { ProductCard } from "@/components/products/ProductCard";
 import { AnimatedSection } from "@/components/ui/AnimatedSection";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getServerPriceContext } from "@/lib/session-price";
 import { toClientProduct } from "@/lib/product-client";
 import { ShopFilters } from "@/components/shop/ShopFilters";
 
@@ -22,7 +22,7 @@ interface Props {
 
 export default async function ShopPage({ searchParams }: Props) {
   const params = await searchParams;
-  const session = await getSession();
+  const { priceAccess, isLoggedIn } = await getServerPriceContext();
   const where: Record<string, unknown> = { isActive: true };
 
   if (params.category) where.category = { slug: params.category };
@@ -46,7 +46,7 @@ export default async function ShopPage({ searchParams }: Props) {
 
   try {
     [products, categories] = await Promise.all([
-      prisma.product.findMany({ where, include: { category: true }, orderBy: { name: "asc" } }),
+      prisma.product.findMany({ where, include: { category: true, _count: { select: { likes: true } } }, orderBy: { name: "asc" } }),
       prisma.category.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } }),
     ]);
     const allProducts = await prisma.product.findMany({ where: { isActive: true }, select: { brand: true } });
@@ -77,9 +77,11 @@ export default async function ShopPage({ searchParams }: Props) {
                     <AnimatedSection key={product.id} delay={i * 0.05}>
                       <ProductCard
                         product={toClientProduct(product)}
-                        isLoggedIn={!!session}
+                        priceAccess={priceAccess}
+                        isLoggedIn={isLoggedIn}
                         fromShop
                         shopFilters={params}
+                        likeCount={(product as { _count?: { likes: number } })._count?.likes ?? 0}
                       />
                     </AnimatedSection>
                   ))}

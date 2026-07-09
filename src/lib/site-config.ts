@@ -247,17 +247,46 @@ export const HERO_SHOWCASE = {
   ],
 } as const;
 
-/** Main hero carousel — fixed order: video → showcase image → video → image → quote image */
-export const HERO_SLIDES = [
+export type HeroSlideConfig =
+  | { id: string; kind: "video"; src: string; poster?: string }
+  | {
+      id: string;
+      kind: "image";
+      image: string;
+      title: string;
+      subtitle?: string;
+      description?: string;
+      ctaText?: string;
+      ctaLink?: string;
+    }
+  | {
+      id: string;
+      kind: "showcase";
+      image: string;
+      eyebrow: string;
+      title: string;
+      cards: readonly {
+        title: string;
+        description: string;
+        highlight: string;
+        image: string;
+        cta: string;
+        href: string;
+      }[];
+    }
+  | { id: string; kind: "quote"; image: string; eyebrow?: string; quote: string; quoteAuthor?: string };
+
+/** Default hero slides when no CMS banners are configured */
+export const HERO_SLIDES: HeroSlideConfig[] = [
   {
     id: "hero-video-1",
-    kind: "video" as const,
+    kind: "video",
     src: "/videos/movie01.mp4",
     poster: "https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=1920",
   },
   {
     id: "hero-showcase",
-    kind: "showcase" as const,
+    kind: "showcase",
     image: "https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=1920",
     eyebrow: HERO_SHOWCASE.eyebrow,
     title: HERO_SHOWCASE.title,
@@ -265,13 +294,13 @@ export const HERO_SLIDES = [
   },
   {
     id: "hero-video-2",
-    kind: "video" as const,
+    kind: "video",
     src: "/videos/movie02.mp4",
     poster: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=1920",
   },
   {
     id: "hero-image-1",
-    kind: "image" as const,
+    kind: "image",
     image: "https://images.unsplash.com/photo-1609840114035-3c981b782dfe?w=1920",
     subtitle: "Global Network",
     title: "Trusted by Clinicians Across India",
@@ -281,12 +310,10 @@ export const HERO_SLIDES = [
   },
   {
     id: "hero-quote",
-    kind: "quote" as const,
+    kind: "quote",
     image: "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=1920",
     eyebrow: "Our Vision",
     quote: "We pursue health and happiness for all humanity through dental science.",
     quoteAuthor: "Dentium",
   },
-] as const;
-
-export type HeroSlideConfig = (typeof HERO_SLIDES)[number];
+];

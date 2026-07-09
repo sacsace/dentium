@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { DataTable } from "@/components/admin/DataTable";
@@ -12,14 +12,27 @@ import { useConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { useAdminListPanel } from "@/hooks/useAdminListPanel";
 import { ADMIN_PANEL_CLASS, buildAdminBreadcrumbItems } from "@/lib/admin-panel";
 
+import { membershipTierLabel } from "@/lib/membership";
+
 interface User {
   id: string;
   name: string;
   email: string;
   company: string | null;
   phone: string | null;
+  erpCustomerNumber: string | null;
   role: string;
   isActive: boolean;
+  membershipTier: "ASSOCIATE" | "FULL";
+  licenseDocumentUrl: string | null;
+  fullMemberStatus: "NONE" | "PENDING" | "REJECTED";
+  fullMemberRequestedAt: string | null;
+  fullMemberReviewNote: string | null;
+  gstin: string | null;
+  panNumber: string | null;
+  state: string | null;
+  city: string | null;
+  pincode: string | null;
   createdAt: string;
 }
 
@@ -50,6 +63,12 @@ function userToForm(user: User) {
   };
 }
 
+function fullMemberStatusLabel(status: User["fullMemberStatus"]) {
+  if (status === "PENDING") return "Pending review";
+  if (status === "REJECTED") return "Rejected";
+  return "—";
+}
+
 function UserDetailView({ item }: { item: User }) {
   return (
     <div className="space-y-6">
@@ -58,6 +77,44 @@ function UserDetailView({ item }: { item: User }) {
         <DetailField label="Email">{item.email}</DetailField>
         <DetailField label="Company">{item.company || "—"}</DetailField>
         <DetailField label="Phone">{item.phone || "—"}</DetailField>
+        <DetailField label="GSTIN">{item.gstin || "—"}</DetailField>
+        <DetailField label="PAN">{item.panNumber || "—"}</DetailField>
+        <DetailField label="State">{item.state || "—"}</DetailField>
+        <DetailField label="City">{item.city || "—"}</DetailField>
+        <DetailField label="Pincode">{item.pincode || "—"}</DetailField>
+        <DetailField label="ERP Customer #">{item.erpCustomerNumber || "—"}</DetailField>
+        <DetailField label="Membership">
+          <span className={item.membershipTier === "FULL" ? "text-brand-deep font-medium" : ""}>
+            {membershipTierLabel(item.membershipTier)}
+          </span>
+        </DetailField>
+        <DetailField label="Full Member Application">
+          {fullMemberStatusLabel(item.fullMemberStatus)}
+          {item.fullMemberRequestedAt && (
+            <span className="block text-xs text-brand-silver mt-1">
+              Requested {new Date(item.fullMemberRequestedAt).toLocaleString()}
+            </span>
+          )}
+        </DetailField>
+        <DetailField label="License Document">
+          {item.licenseDocumentUrl ? (
+            <a
+              href={item.licenseDocumentUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-brand-deep hover:underline break-all"
+            >
+              View uploaded license
+            </a>
+          ) : (
+            "—"
+          )}
+        </DetailField>
+        {item.fullMemberReviewNote && (
+          <DetailField label="Review Note" className="sm:col-span-2">
+            {item.fullMemberReviewNote}
+          </DetailField>
+        )}
         <DetailField label="Role">
           <span
             className={
@@ -183,6 +240,7 @@ function UserFormFields({
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  const [userFilter, setUserFilter] = useState<"all" | "pending" | "fullPending" | "active">("all");
   const [form, setForm] = useState(EMPTY_FORM);
   const { confirm, showAlert } = useConfirmDialog();
   const panel = useAdminListPanel<User>();
@@ -282,6 +340,74 @@ export default function AdminUsersPage() {
     fetchData();
   };
 
+  const filteredUsers = useMemo(() => {
+    if (userFilter === "pending") return users.filter((u) => !u.isActive && u.role === "USER");
+    if (userFilter === "fullPending") return users.filter((u) => u.fullMemberStatus === "PENDING");
+    if (userFilter === "active") return users.filter((u) => u.isActive);
+    return users;
+  }, [users, userFilter]);
+
+  const pendingCount = useMemo(() => users.filter((u) => !u.isActive && u.role === "USER").length, [users]);
+  const fullPendingCount = useMemo(() => users.filter((u) => u.fullMemberStatus === "PENDING").length, [users]);
+
+  const approveFullMembership = async (user: User) => {
+    const res = await fetch(`/api/admin/users/${user.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fullMemberAction: "approve" }),
+    });
+    if (res.ok) {
+      await fetchData();
+      const updated = await res.json();
+      if (panel.selected?.id === user.id) panel.setSelected(updated);
+      await showAlert({
+        variant: "info",
+        title: "Full membership approved",
+        message: `${user.name} is now a Full Member. Approval email sent.`,
+      });
+    } else {
+      const data = await res.json();
+      await showAlert({ variant: "error", message: data.error || "Failed to approve full membership" });
+    }
+  };
+
+  const rejectFullMembership = async (user: User) => {
+    const note = window.prompt("Rejection note (optional):", user.fullMemberReviewNote || "");
+    if (note === null) return;
+    const res = await fetch(`/api/admin/users/${user.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fullMemberAction: "reject", fullMemberReviewNote: note }),
+    });
+    if (res.ok) {
+      await fetchData();
+      const updated = await res.json();
+      if (panel.selected?.id === user.id) panel.setSelected(updated);
+      await showAlert({ variant: "info", title: "Application rejected", message: `${user.name}'s full membership application was rejected.` });
+    } else {
+      const data = await res.json();
+      await showAlert({ variant: "error", message: data.error || "Failed to reject application" });
+    }
+  };
+
+  const approveUser = async (user: User) => {
+    const res = await fetch(`/api/admin/users/${user.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isActive: true }),
+    });
+    if (res.ok) {
+      await fetchData();
+      if (panel.selected?.id === user.id) {
+        const updated = await res.json();
+        panel.setSelected(updated);
+      }
+      await showAlert({ variant: "info", title: "Approved", message: `${user.name} can now log in. Approval email sent.` });
+    } else {
+      const data = await res.json();
+      await showAlert({ variant: "error", message: data.error || "Failed to approve user" });
+    }
+  };
   const itemLabel = panel.selected?.name ?? "Details";
   const breadcrumbItems = buildAdminBreadcrumbItems(
     "Users",
@@ -304,11 +430,42 @@ export default function AdminUsersPage() {
       <AdminListDetailGrid
         showSidePanel={panel.showSidePanel}
         list={
-          <DataTable
+          <>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {(["all", "pending", "fullPending", "active"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setUserFilter(tab)}
+                  className={`px-4 py-2 text-sm rounded-sm transition-colors ${
+                    userFilter === tab ? "bg-brand-accent text-brand-navy" : "bg-brand-gray text-brand-dark"
+                  }`}
+                >
+                  {tab === "all"
+                    ? "All"
+                    : tab === "pending"
+                      ? `Signup (${pendingCount})`
+                      : tab === "fullPending"
+                        ? `Full Member (${fullPendingCount})`
+                        : "Active"}
+                </button>
+              ))}
+            </div>
+            <DataTable
             columns={[
               { key: "name", label: "Name" },
               { key: "email", label: "Email" },
               { key: "company", label: "Company", render: (u) => u.company || "—" },
+              {
+                key: "membershipTier",
+                label: "Membership",
+                render: (u) => membershipTierLabel(u.membershipTier),
+              },
+              {
+                key: "fullMemberStatus",
+                label: "Full App.",
+                render: (u) => (u.fullMemberStatus === "PENDING" ? "Pending" : u.fullMemberStatus === "REJECTED" ? "Rejected" : "—"),
+              },
               {
                 key: "role",
                 label: "Role",
@@ -329,11 +486,12 @@ export default function AdminUsersPage() {
               { key: "isActive", label: "Active", render: (u) => (u.isActive ? "Yes" : "No") },
               { key: "createdAt", label: "Joined", render: (u) => new Date(u.createdAt).toLocaleDateString() },
             ]}
-            data={users}
+            data={filteredUsers}
             onEdit={panel.openView}
             onDelete={handleDelete}
             selectedRowId={panel.activeRowId}
           />
+          </>
         }
         panel={
           <>
@@ -344,9 +502,26 @@ export default function AdminUsersPage() {
                   <AdminPanelBreadcrumb items={breadcrumbItems} onNavigate={panel.handleBreadcrumbNavigate} />
                 }
                 headerAction={
-                  <Button type="button" size="sm" variant="secondary" onClick={openEditFromDetail}>
-                    Edit
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    {!panel.selected.isActive && panel.selected.role === "USER" && (
+                      <Button type="button" size="sm" onClick={() => approveUser(panel.selected!)}>
+                        Approve signup
+                      </Button>
+                    )}
+                    {panel.selected.fullMemberStatus === "PENDING" && (
+                      <>
+                        <Button type="button" size="sm" onClick={() => approveFullMembership(panel.selected!)}>
+                          Approve full member
+                        </Button>
+                        <Button type="button" size="sm" variant="secondary" onClick={() => rejectFullMembership(panel.selected!)}>
+                          Reject
+                        </Button>
+                      </>
+                    )}
+                    <Button type="button" size="sm" variant="secondary" onClick={openEditFromDetail}>
+                      Edit
+                    </Button>
+                  </div>
                 }
                 onClose={panel.closePanel}
                 className={ADMIN_PANEL_CLASS}

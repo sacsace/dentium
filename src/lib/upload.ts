@@ -6,3 +6,7 @@ export async function uploadFile(file: File): Promise<string> {
   if (!res.ok) throw new Error(data.error || "Upload failed");
   return data.url;
 }
+
+export async function uploadMediaFile(file: File): Promise<string> {
+  return uploadFile(file);
+}

@@ -1,4 +1,5 @@
 import { formatPrice } from "@/lib/utils";
+import type { PriceAccess } from "@/lib/membership";
 
 /** Plain product shape safe to pass from Server Components to Client Components. */
 export type ClientProduct = {
@@ -39,13 +40,14 @@ export function toClientProduct(product: ProductLike): ClientProduct {
   };
 }
 
-/** Unit price is visible only to authenticated users. */
-export function getProductPriceLabel(product: { price: number | null }, isLoggedIn: boolean): string {
-  if (!isLoggedIn) return "Login for Price";
-  return formatPrice(product.price);
+/** Unit price is visible only to full members (and admins). */
+export function getProductPriceLabel(product: { price: number | null }, access: PriceAccess): string {
+  if (access === "full") return formatPrice(product.price);
+  if (access === "associate") return "Full membership required";
+  return "Login for Price";
 }
 
-export function getCartUnitPrice(product: { price: number | null }, isLoggedIn: boolean): number | null {
-  if (!isLoggedIn || product.price == null) return null;
+export function getCartUnitPrice(product: { price: number | null }, access: PriceAccess): number | null {
+  if (access !== "full" || product.price == null) return null;
   return product.price;
 }

@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
+import { Download, Plus, Upload } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { BulkImportModal } from "@/components/admin/BulkImportModal";
+import { COUPON_IMPORT_TEMPLATE } from "@/lib/bulk-import-templates";
 import { DataTable } from "@/components/admin/DataTable";
 import { AdminInlineForm, FormField, inputClass } from "@/components/admin/AdminForm";
 import { AdminDetailPanel, AdminPageHeader, AdminPanelBreadcrumb } from "@/components/admin/AdminPageHeader";
@@ -23,6 +25,9 @@ interface Coupon {
   maxUses: number | null;
   usedCount: number;
   expiresAt: string | null;
+  freeShipping: boolean;
+  productIds: string[];
+  allowedUserIds: string[];
   isActive: boolean;
   createdAt: string;
 }
@@ -35,6 +40,9 @@ const EMPTY_FORM = {
   minOrderAmount: "",
   maxUses: "",
   expiresAt: "",
+  freeShipping: false,
+  productIds: [] as string[],
+  allowedUserIds: [] as string[],
   isActive: true,
 };
 
@@ -47,6 +55,9 @@ function couponToForm(c: Coupon) {
     minOrderAmount: c.minOrderAmount != null ? String(c.minOrderAmount) : "",
     maxUses: c.maxUses != null ? String(c.maxUses) : "",
     expiresAt: c.expiresAt ? c.expiresAt.slice(0, 10) : "",
+    freeShipping: c.freeShipping ?? false,
+    productIds: c.productIds ?? [],
+    allowedUserIds: c.allowedUserIds ?? [],
     isActive: c.isActive ?? true,
   };
 }
@@ -72,6 +83,7 @@ function CouponDetailView({ item }: { item: Coupon }) {
         <DetailField label="Status">
           <ActiveBadge active={item.isActive} />
         </DetailField>
+        {item.freeShipping && <DetailField label="Free shipping">Yes</DetailField>}
       </div>
       {item.description && (
         <DetailField label="Description">
@@ -87,11 +99,15 @@ function CouponFormFields({
   setForm,
   isCreate = false,
   onRegenerateCode,
+  products = [],
+  users = [],
 }: {
   form: typeof EMPTY_FORM;
   setForm: React.Dispatch<React.SetStateAction<typeof EMPTY_FORM>>;
   isCreate?: boolean;
   onRegenerateCode?: () => void;
+  products?: { id: string; name: string }[];
+  users?: { id: string; name: string; email: string }[];
 }) {
   return (
     <>
@@ -185,21 +201,84 @@ function CouponFormFields({
           />{" "}
           Active
         </label>
+        <label className="flex items-center gap-2 text-sm pt-6">
+          <input
+            type="checkbox"
+            checked={form.freeShipping}
+            onChange={(e) => setForm({ ...form, freeShipping: e.target.checked })}
+          />{" "}
+          Free shipping
+        </label>
       </div>
+      {products.length > 0 && (
+        <FormField label="Limit to products (optional)">
+          <select
+            multiple
+            className={`${inputClass} min-h-[100px]`}
+            value={form.productIds}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                productIds: Array.from(e.target.selectedOptions).map((o) => o.value),
+              })
+            }
+          >
+            {products.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </FormField>
+      )}
+      {users.length > 0 && (
+        <FormField label="Limit to members (optional)">
+          <select
+            multiple
+            className={`${inputClass} min-h-[100px]`}
+            value={form.allowedUserIds}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                allowedUserIds: Array.from(e.target.selectedOptions).map((o) => o.value),
+              })
+            }
+          >
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
+            ))}
+          </select>
+        </FormField>
+      )}
     </>
   );
 }
 
 export default function AdminCouponsPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [products, setProducts] = useState<{ id: string; name: string }[]>([]);
+  const [users, setUsers] = useState<{ id: string; name: string; email: string }[]>([]);
   const [loading, setLoading] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const { confirm, showAlert } = useConfirmDialog();
   const panel = useAdminListPanel<Coupon>();
 
   const fetchData = async () => {
-    const res = await fetch("/api/admin/coupons");
-    if (res.ok) setCoupons(await res.json());
+    const [cRes, pRes, uRes] = await Promise.all([
+      fetch("/api/admin/coupons"),
+      fetch("/api/admin/products"),
+      fetch("/api/admin/users"),
+    ]);
+    if (cRes.ok) setCoupons(await cRes.json());
+    if (pRes.ok) setProducts(await pRes.json());
+    if (uRes.ok) {
+      const data = await uRes.json();
+      const list = Array.isArray(data) ? data : (data.users ?? []);
+      setUsers(
+        list
+          .filter((u: { role: string }) => u.role === "USER")
+          .map((u: { id: string; name: string; email: string }) => ({ id: u.id, name: u.name, email: u.email }))
+      );
+    }
   };
 
   useEffect(() => {
@@ -259,6 +338,10 @@ export default function AdminCouponsPage() {
     }
   };
 
+  const handleExport = () => {
+    window.location.href = "/api/admin/coupons/export";
+  };
+
   const itemLabel = panel.selected?.code ?? "Details";
   const breadcrumbItems = buildAdminBreadcrumbItems(
     "Coupons",
@@ -272,9 +355,17 @@ export default function AdminCouponsPage() {
       <AdminPageHeader
         title="Coupons"
         action={
-          <Button type="button" onClick={openCreate}>
-            <Plus className="w-4 h-4" /> Add Coupon
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" onClick={handleExport}>
+              <Download className="w-4 h-4" /> Export CSV
+            </Button>
+            <Button type="button" variant="outline" onClick={() => setBulkOpen(true)}>
+              <Upload className="w-4 h-4" /> Bulk Import
+            </Button>
+            <Button type="button" onClick={openCreate}>
+              <Plus className="w-4 h-4" /> Add Coupon
+            </Button>
+          </div>
         }
       />
 
@@ -338,7 +429,7 @@ export default function AdminCouponsPage() {
                 loading={loading}
                 className={ADMIN_PANEL_CLASS}
               >
-                <CouponFormFields form={form} setForm={setForm} />
+                <CouponFormFields form={form} setForm={setForm} products={products} users={users} />
               </AdminInlineForm>
             )}
 
@@ -353,11 +444,23 @@ export default function AdminCouponsPage() {
                 loading={loading}
                 className={ADMIN_PANEL_CLASS}
               >
-                <CouponFormFields form={form} setForm={setForm} isCreate onRegenerateCode={regenerateCode} />
+                <CouponFormFields form={form} setForm={setForm} isCreate onRegenerateCode={regenerateCode} products={products} users={users} />
               </AdminInlineForm>
             )}
           </>
         }
+      />
+
+      <BulkImportModal
+        open={bulkOpen}
+        onClose={() => setBulkOpen(false)}
+        title="Bulk Import Coupons"
+        description="Upload or paste a CSV file to register multiple coupons at once."
+        templateFilename="coupons-template.csv"
+        templateContent={COUPON_IMPORT_TEMPLATE}
+        columnsHelp="Required: code, discountType (PERCENT or FIXED), discountValue. Optional: description, minOrderAmount, maxUses, expiresAt (YYYY-MM-DD), isActive (true/false). Header row is required."
+        importEndpoint="/api/admin/coupons/bulk"
+        onComplete={fetchData}
       />
     </div>
   );

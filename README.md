@@ -38,7 +38,7 @@
 | 장바구니 / 주문 / 견적 | ✅ 기본 완료 | 결제 게이트웨이 미연동 |
 | SEO | ✅ 완료 | sitemap, robots, JSON-LD, OG |
 | DB 시드 (dentium.co.in 기준) | ✅ 완료 | 제품·블로그·이벤트·오피스 |
-| 결제 연동 | ⏳ 미구현 | Razorpay/Stripe 예정 |
+| 결제 연동 | ⏳ 미구현 | **CCAvenue** 예정 |
 | 이메일/SMS 알림 | ⏳ 미구현 | — |
 | 다국어 (i18n) | ⏳ 미구현 | 영어 단일 |
 | Popup Banner CMS | ⏳ 스키마만 | UI/API 미구현 |
@@ -236,6 +236,12 @@ ADMIN_EMAIL="root"
 ADMIN_PASSWORD="admin123"
 NEXT_PUBLIC_APP_URL="https://www.dentium.in"
 NEXT_PUBLIC_APP_NAME="Dentium"
+
+# CCAvenue (결제 연동 시 — Merchant Dashboard → API Keys)
+CCAVENUE_MERCHANT_ID=""
+CCAVENUE_ACCESS_CODE=""
+CCAVENUE_WORKING_KEY=""
+CCAVENUE_ENV="test"
 ```
 
 로컬 개발 시에도 위 URL을 쓰면 sitemap·canonical·OG URL이 프로덕션 도메인으로 생성됩니다. 로컬 전용으로 쓰려면 `http://localhost:3200`으로 변경하세요.
@@ -302,7 +308,7 @@ npm start
 ## 9. 미구현 / 향후 개발 항목
 
 ### 우선순위 높음
-- [ ] **결제 게이트웨이** (Razorpay — 인도 시장)
+- [ ] **결제 게이트웨이** ([CCAvenue](https://www.ccavenue.com/) — 인도 시장, 카드·UPI·네트뱅킹 등)
 - [ ] **이메일 알림** (주문 확인, 견적, 회원가입)
 - [ ] **프로덕션 배포** (Vercel/AWS + PostgreSQL 호스팅)
 - [ ] `NEXT_PUBLIC_APP_URL=https://www.dentium.in` 설정

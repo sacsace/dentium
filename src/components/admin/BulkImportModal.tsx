@@ -6,6 +6,7 @@ import { AdminDetailModal } from "@/components/admin/AdminPageHeader";
 import { FormField, inputClass } from "@/components/admin/AdminForm";
 import { Button } from "@/components/ui/Button";
 import { downloadCsvTemplate, type BulkImportResult } from "@/lib/csv-import";
+import { readSpreadsheetAsCsv } from "@/lib/spreadsheet-client";
 
 type BulkImportModalProps = {
   open: boolean;
@@ -17,6 +18,7 @@ type BulkImportModalProps = {
   columnsHelp: string;
   importEndpoint: string;
   onComplete: () => void;
+  acceptExcel?: boolean;
 };
 
 export function BulkImportModal({
@@ -29,15 +31,20 @@ export function BulkImportModal({
   columnsHelp,
   importEndpoint,
   onComplete,
+  acceptExcel = false,
 }: BulkImportModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [csvText, setCsvText] = useState("");
+  const [fileName, setFileName] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<BulkImportResult | null>(null);
+  const [result, setResult] = useState<
+    (BulkImportResult & { updated?: number; skipped?: number; duplicates?: { row: number; name?: string; erpCustomerNumber: string; message: string }[] }) | null
+  >(null);
   const [error, setError] = useState<string | null>(null);
 
   const reset = () => {
     setCsvText("");
+    setFileName(null);
     setResult(null);
     setError(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -50,10 +57,15 @@ export function BulkImportModal({
 
   const handleFileChange = async (file: File | null) => {
     if (!file) return;
-    const text = await file.text();
-    setCsvText(text);
-    setResult(null);
-    setError(null);
+    try {
+      const text = acceptExcel ? await readSpreadsheetAsCsv(file) : await file.text();
+      setCsvText(text);
+      setFileName(file.name);
+      setResult(null);
+      setError(null);
+    } catch {
+      setError("Could not read file. Use CSV or Excel (.xlsx).");
+    }
   };
 
   const handleImport = async () => {
@@ -70,7 +82,7 @@ export function BulkImportModal({
       const res = await fetch(importEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ csv: csvText }),
+        body: JSON.stringify({ csv: csvText, fileName }),
       });
       const data = await res.json().catch(() => ({}));
 
@@ -79,8 +91,9 @@ export function BulkImportModal({
         return;
       }
 
-      setResult(data as BulkImportResult);
-      if (data.created > 0) onComplete();
+      setResult(data as BulkImportResult & { updated?: number; skipped?: number });
+      const imported = (data.created ?? 0) + (data.updated ?? 0);
+      if (imported > 0) onComplete();
     } catch {
       setError("Import failed. Please try again.");
     } finally {
@@ -109,12 +122,12 @@ export function BulkImportModal({
           </Button>
           <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
             <Upload className="w-4 h-4" />
-            Upload CSV file
+            Upload {acceptExcel ? "CSV / Excel" : "CSV file"}
           </Button>
           <input
             ref={fileInputRef}
             type="file"
-            accept=".csv,text/csv"
+            accept={acceptExcel ? ".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : ".csv,text/csv"}
             className="hidden"
             onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
           />
@@ -142,8 +155,23 @@ export function BulkImportModal({
         {result && (
           <div className="rounded-sm border border-gray-200 bg-brand-gray/30 px-4 py-3 text-sm space-y-2">
             <p className="font-medium text-brand-navy">
-              {result.created} item{result.created === 1 ? "" : "s"} imported successfully.
+              {result.created} created
+              {result.updated != null && result.updated > 0 ? `, ${result.updated} updated` : ""}
+              {result.skipped != null && result.skipped > 0 ? `, ${result.skipped} skipped` : ""}.
             </p>
+            {result.duplicates && result.duplicates.length > 0 && (
+              <div>
+                <p className="text-amber-700 font-medium mb-1">{result.duplicates.length} duplicate row(s) — existing records updated:</p>
+                <ul className="space-y-1 text-brand-dark max-h-40 overflow-y-auto">
+                  {result.duplicates.map((item) => (
+                    <li key={`dup-${item.row}-${item.erpCustomerNumber}`}>
+                      Row {item.row}
+                      {item.name ? ` (${item.name})` : ""}: {item.message}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {result.failed.length > 0 && (
               <div>
                 <p className="text-red-700 font-medium mb-1">{result.failed.length} row(s) failed:</p>

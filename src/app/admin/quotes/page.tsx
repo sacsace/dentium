@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/admin/DataTable";
 import { FormField, inputClass } from "@/components/admin/AdminForm";
+import { useConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { Button } from "@/components/ui/Button";
 import { AdminDetailPanel, AdminPageHeader, AdminPanelBreadcrumb } from "@/components/admin/AdminPageHeader";
 import { AdminListDetailGrid } from "@/components/admin/AdminListDetailGrid";
@@ -12,6 +13,7 @@ import type { OrderStatus } from "@prisma/client";
 interface QuoteItem {
   id: string;
   quantity: number;
+  unitPrice: string | number | null;
   product: {
     id: string;
     name: string;
@@ -30,6 +32,7 @@ interface Quote {
   company: string | null;
   message: string | null;
   status: OrderStatus;
+  totalAmount?: string | number | null;
   createdAt: string;
   items?: QuoteItem[];
   user?: { id: string; name: string | null; email: string | null; phone?: string | null; company?: string | null } | null;
@@ -59,11 +62,22 @@ function StatusBadge({ status }: { status: OrderStatus }) {
 }
 
 export default function AdminQuotesPage() {
+  const { confirm, showAlert } = useConfirmDialog();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [selected, setSelected] = useState<Quote | null>(null);
   const [editStatus, setEditStatus] = useState<OrderStatus>("QUOTE_REQUESTED");
+  const [itemPrices, setItemPrices] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [sending, setSending] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
+
+  const quoteTotal = useMemo(() => {
+    if (!selected?.items) return 0;
+    return selected.items.reduce((sum, item) => {
+      const price = Number(itemPrices[item.id] ?? item.unitPrice ?? 0);
+      return sum + (Number.isFinite(price) ? price : 0) * item.quantity;
+    }, 0);
+  }, [selected?.items, itemPrices]);
 
   const loadQuotes = useCallback(() => {
     fetch("/api/admin/quotes").then((r) => r.json()).then(setQuotes);
@@ -85,6 +99,11 @@ export default function AdminQuotesPage() {
       if (res.ok) {
         setSelected(data);
         setEditStatus(data.status);
+        const prices: Record<string, string> = {};
+        for (const item of data.items ?? []) {
+          prices[item.id] = item.unitPrice != null ? String(item.unitPrice) : "";
+        }
+        setItemPrices(prices);
       }
     } finally {
       setLoadingDetail(false);
@@ -98,15 +117,58 @@ export default function AdminQuotesPage() {
       const res = await fetch(`/api/admin/quotes/${selected.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: editStatus }),
+        body: JSON.stringify({
+          status: editStatus,
+          items: selected.items?.map((item) => ({
+            id: item.id,
+            unitPrice: itemPrices[item.id] ?? item.unitPrice,
+          })),
+        }),
       });
       const data = await res.json();
       if (res.ok) {
         setSelected(data);
-        setQuotes((prev) => prev.map((q) => (q.id === data.id ? { ...q, status: data.status } : q)));
+        setQuotes((prev) => prev.map((q) => (q.id === data.id ? { ...q, ...data } : q)));
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  const sendQuote = async () => {
+    if (!selected) return;
+    const ok = await confirm({
+      title: "Send quote email",
+      message: `Send quote ${selected.quoteNumber} to ${selected.email} with total ${quoteTotal > 0 ? `₹${quoteTotal.toLocaleString("en-IN")}` : "amount TBD"}?`,
+      confirmLabel: "Send Email",
+    });
+    if (!ok) return;
+
+    setSending(true);
+    try {
+      const res = await fetch(`/api/admin/quotes/${selected.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: editStatus,
+          sendQuoteEmail: true,
+          items: selected.items?.map((item) => ({
+            id: item.id,
+            unitPrice: itemPrices[item.id],
+          })),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSelected(data);
+        setEditStatus(data.status);
+        setQuotes((prev) => prev.map((q) => (q.id === data.id ? { ...q, ...data } : q)));
+        await showAlert({ variant: "info", title: "Quote sent", message: `Email sent to ${selected.email}` });
+      } else {
+        await showAlert({ variant: "error", message: data.error || "Failed to send quote email" });
+      }
+    } finally {
+      setSending(false);
     }
   };
 
@@ -176,6 +238,7 @@ export default function AdminQuotesPage() {
                             <th className="px-4 py-2 text-left font-medium text-brand-navy">Product</th>
                             <th className="px-4 py-2 text-left font-medium text-brand-navy">SKU</th>
                             <th className="px-4 py-2 text-right font-medium text-brand-navy">Qty</th>
+                            <th className="px-4 py-2 text-right font-medium text-brand-navy">Unit Price (₹)</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -184,10 +247,26 @@ export default function AdminQuotesPage() {
                               <td className="px-4 py-2">{item.product.name}</td>
                               <td className="px-4 py-2 text-brand-silver">{item.product.sku || "—"}</td>
                               <td className="px-4 py-2 text-right">{item.quantity}</td>
+                              <td className="px-4 py-2 text-right">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  className={`${inputClass} w-28 ml-auto`}
+                                  value={itemPrices[item.id] ?? ""}
+                                  onChange={(e) => setItemPrices({ ...itemPrices, [item.id]: e.target.value })}
+                                  placeholder="0"
+                                />
+                              </td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
+                      {quoteTotal > 0 && (
+                        <p className="text-right text-sm font-medium text-brand-navy mt-3 pr-4">
+                          Total: ₹{quoteTotal.toLocaleString("en-IN")}
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
@@ -201,9 +280,14 @@ export default function AdminQuotesPage() {
                       ))}
                     </select>
                   </FormField>
-                  <Button onClick={saveStatus} disabled={saving} className="w-full sm:w-auto">
-                    {saving ? "Saving..." : "Save Status"}
-                  </Button>
+                  <div className="flex flex-col sm:flex-row flex-wrap gap-3 mt-4">
+                    <Button onClick={saveStatus} disabled={saving} className="w-full sm:w-auto">
+                      {saving ? "Saving..." : "Save"}
+                    </Button>
+                    <Button type="button" variant="outline" onClick={sendQuote} disabled={sending || quoteTotal <= 0} className="w-full sm:w-auto">
+                      {sending ? "Sending..." : "Send Quote Email"}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </AdminDetailPanel>

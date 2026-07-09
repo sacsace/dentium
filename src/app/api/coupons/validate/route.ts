@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { validateCouponCode } from "@/lib/coupon";
+import { getSession } from "@/lib/auth";
+import { validateCouponCode } from "@/lib/order-pricing";
 
 export async function POST(req: NextRequest) {
   try {
-    const { code, subtotal } = await req.json();
+    const session = await getSession();
+    const { code, subtotal, productIds } = await req.json();
     const amount = Number(subtotal);
 
     if (!code || typeof code !== "string") {
@@ -13,7 +15,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Valid subtotal is required" }, { status: 400 });
     }
 
-    const result = await validateCouponCode(code, amount);
+    const cartProductIds = Array.isArray(productIds)
+      ? productIds.filter((id: unknown) => typeof id === "string")
+      : [];
+
+    const result = await validateCouponCode(code, amount, {
+      userId: session?.id,
+      cartProductIds,
+    });
     if (!result.valid) {
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
@@ -25,6 +34,7 @@ export async function POST(req: NextRequest) {
       total: result.total,
       discountType: result.discountType,
       discountValue: result.discountValue,
+      freeShipping: result.freeShipping,
     });
   } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

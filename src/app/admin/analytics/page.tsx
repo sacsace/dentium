@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { buildMetadata } from "@/lib/seo";
 import { AnalyticsTabs } from "@/components/admin/analytics/AnalyticsTabs";
+import { AnalyticsExportButtons } from "@/components/admin/analytics/AnalyticsExportButtons";
 import { VisitorAnalyticsPanel } from "@/components/admin/analytics/VisitorAnalyticsPanel";
 import { ProductAnalyticsPanel } from "@/components/admin/analytics/ProductAnalyticsPanel";
 
@@ -30,9 +31,12 @@ export default async function AdminAnalyticsPage({ searchParams }: Props) {
 
   return (
     <div className="space-y-2">
-      <div>
-        <h1 className="text-2xl font-semibold text-brand-navy mb-2">Analytics</h1>
-        <p className="text-brand-silver text-sm">Website traffic and product performance insights.</p>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold text-brand-navy mb-2">Analytics</h1>
+          <p className="text-brand-silver text-sm">Website traffic and product performance insights.</p>
+        </div>
+        <AnalyticsExportButtons activeTab={activeTab} />
       </div>
 
       <AnalyticsTabs active={activeTab} />

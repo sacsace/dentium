@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { normalizeCouponCode } from "@/lib/coupon-utils";
+import { parseCouponPayload } from "@/lib/coupon-admin";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -18,12 +19,9 @@ export async function PUT(req: NextRequest, context: RouteContext) {
   if (!data.discountType || !["PERCENT", "FIXED"].includes(data.discountType)) {
     return NextResponse.json({ error: "Invalid discount type" }, { status: 400 });
   }
-  const discountValue = Number(data.discountValue);
-  if (!Number.isFinite(discountValue) || discountValue <= 0) {
-    return NextResponse.json({ error: "Discount value must be greater than 0" }, { status: 400 });
-  }
-  if (data.discountType === "PERCENT" && discountValue > 100) {
-    return NextResponse.json({ error: "Percent discount cannot exceed 100" }, { status: 400 });
+  const parsed = parseCouponPayload(data);
+  if ("error" in parsed) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
 
   const duplicate = await prisma.coupon.findFirst({
@@ -38,11 +36,14 @@ export async function PUT(req: NextRequest, context: RouteContext) {
     data: {
       code,
       description: data.description || null,
-      discountType: data.discountType,
-      discountValue,
+      discountType: parsed.discountType,
+      discountValue: parsed.discountValue,
       minOrderAmount: data.minOrderAmount != null && data.minOrderAmount !== "" ? Number(data.minOrderAmount) : null,
       maxUses: data.maxUses != null && data.maxUses !== "" ? Number(data.maxUses) : null,
       expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
+      freeShipping: parsed.freeShipping,
+      productIds: parsed.productIds,
+      allowedUserIds: parsed.allowedUserIds,
       isActive: data.isActive ?? true,
     },
   });

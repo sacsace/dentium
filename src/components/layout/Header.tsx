@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ShoppingCart, ChevronDown, User, LogOut } from "lucide-react";
+import { SiteSearch } from "@/components/search/SiteSearch";
 import { useCartStore } from "@/store/cart";
 import { clearCartOnLogout } from "@/components/cart/CartAuthSync";
 import { cn } from "@/lib/utils";
@@ -137,6 +138,9 @@ export function Header() {
             </nav>
 
             <div className="flex items-center gap-1 shrink-0">
+              <div className="hidden lg:block w-52 xl:w-64 mr-2">
+                <SiteSearch />
+              </div>
               <Link href="/shop/cart" className={cn("relative p-2.5 rounded-sm transition-colors", iconBtn)}>
                 <ShoppingCart className="w-5 h-5" />
                 {mounted && cartItems > 0 && (
@@ -266,6 +270,9 @@ export function Header() {
               className="xl:hidden bg-white border-t border-brand-muted max-h-[80vh] overflow-y-auto shadow-soft"
             >
               <nav className="container mx-auto px-4 py-4">
+                <div className="mb-4 lg:hidden">
+                  <SiteSearch />
+                </div>
                 {megaMenuItems.map((item) => (
                   <div key={item.label} className="border-b border-brand-muted last:border-0">
                     <button

@@ -24,8 +24,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   return (
     <AdminDialogProvider>
-      <div className="flex min-h-screen bg-brand-gray">
-        <header className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-brand-navy border-b border-white/10 flex items-center gap-3 px-4">
+      <div className="flex h-screen max-h-dvh overflow-hidden bg-brand-gray">
+        <header className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-brand-navy border-b border-white/10 flex items-center gap-3 px-4">
         <button
           type="button"
           onClick={() => setMobileOpen(true)}
@@ -41,7 +41,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         {mobileOpen && (
           <button
             type="button"
-            className="lg:hidden fixed inset-0 z-40 bg-black/50"
+            className="md:hidden fixed inset-0 z-40 bg-black/50"
             aria-label="Close menu"
             onClick={() => setMobileOpen(false)}
           />
@@ -49,7 +49,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
         <AdminSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
 
-        <main className="flex-1 min-w-0 flex flex-col pt-14 lg:pt-0">
+        <main className="flex-1 min-w-0 flex flex-col pt-14 md:pt-0">
           <div className="p-4 sm:p-6 lg:p-8 flex-1 flex flex-col min-h-0 overflow-auto">{children}</div>
         </main>
       </div>

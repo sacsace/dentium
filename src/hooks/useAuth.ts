@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import type { SessionUser } from "@/lib/auth";
+import { canSeeProductPrices } from "@/lib/membership";
 
 export const AUTH_CHANGE_EVENT = "dentium-auth-change";
 
@@ -44,5 +45,11 @@ export function useAuth() {
     return () => window.removeEventListener(AUTH_CHANGE_EVENT, onAuthChange);
   }, [fetchUser]);
 
-  return { user, loading, isLoggedIn: !!user };
+  return {
+    user,
+    loading,
+    isLoggedIn: !!user,
+    membershipTier: user?.membershipTier,
+    canSeePrices: canSeeProductPrices(user),
+  };
 }

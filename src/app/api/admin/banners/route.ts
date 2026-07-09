@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
+import { normalizeBannerPayload, type BannerFormState } from "@/lib/banner-form";
 
 export async function GET() {
   const session = await requireAdmin();
@@ -14,7 +15,11 @@ export async function POST(req: NextRequest) {
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const data = await req.json();
-  const banner = await prisma.banner.create({ data });
+  const normalized = normalizeBannerPayload((await req.json()) as BannerFormState);
+  if ("error" in normalized) {
+    return NextResponse.json({ error: normalized.error }, { status: 400 });
+  }
+
+  const banner = await prisma.banner.create({ data: normalized.data });
   return NextResponse.json(banner);
 }

@@ -16,13 +16,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    if (!file.type.startsWith("image/")) {
-      return NextResponse.json({ error: "Only image files are allowed" }, { status: 400 });
+    if (!file.type.startsWith("image/") && !file.type.startsWith("video/") && file.type !== "application/pdf") {
+      return NextResponse.json({ error: "Only image, video, or PDF files are allowed" }, { status: 400 });
     }
 
-    const MAX_SIZE = 5 * 1024 * 1024;
+    const MAX_SIZE = file.type.startsWith("video/")
+      ? 50 * 1024 * 1024
+      : file.type === "application/pdf"
+        ? 10 * 1024 * 1024
+        : 5 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: "File must be 5MB or less" }, { status: 400 });
+      const label = file.type.startsWith("video/") ? "Video must be 50MB or less" : file.type === "application/pdf" ? "PDF must be 10MB or less" : "File must be 5MB or less";
+      return NextResponse.json({ error: label }, { status: 400 });
     }
 
     const bytes = await file.arrayBuffer();

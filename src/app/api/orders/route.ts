@@ -1,66 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { validateCouponCode } from "@/lib/coupon";
+import { calculateCartPricing, type CartLineInput } from "@/lib/order-pricing";
 import { generateOrderNumber } from "@/lib/utils";
+import { canSeeProductPrices } from "@/lib/membership";
 
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession();
-    const { name, email, phone, company, message, items, couponCode } = await req.json();
+    const { name, email, phone, company, message, items, couponCode, quoteOnly } = await req.json();
 
     if (!name || !email || !items?.length) {
       return NextResponse.json({ error: "Name, email, and items are required" }, { status: 400 });
     }
 
-    const orderItemsInput = items as { productId?: string; quantity?: number }[];
-    const productIds = Array.from(
-      new Set(
-        orderItemsInput
-          .map((item) => item.productId)
-          .filter((id): id is string => typeof id === "string" && id.length > 0)
-      )
-    );
-    const products = await prisma.product.findMany({
-      where: { id: { in: productIds } },
-      select: { id: true, price: true },
-    });
-    const productMap = new Map(products.map((product) => [product.id, product]));
-
-    let subtotal = 0;
-    const orderItems: { productId: string; quantity: number; price: Prisma.Decimal | null }[] = [];
-
-    for (const item of orderItemsInput) {
-      if (!item.productId) continue;
-      const product = productMap.get(item.productId);
-      if (!product) continue;
-      const quantity = item.quantity && item.quantity > 0 ? item.quantity : 1;
-      const unitPrice = product.price != null ? Number(product.price) : 0;
-      subtotal += unitPrice * quantity;
-      orderItems.push({
-        productId: item.productId,
-        quantity,
-        price: product.price,
-      });
+    if (!quoteOnly && !canSeeProductPrices(session)) {
+      return NextResponse.json({ error: "Full membership required to place orders" }, { status: 403 });
     }
 
-    if (orderItems.length === 0) {
+    const orderItemsInput = items as { productId?: string; variantId?: string; quantity?: number }[];
+    const lines: CartLineInput[] = orderItemsInput
+      .filter((item) => item.productId)
+      .map((item) => ({
+        productId: item.productId!,
+        variantId: item.variantId || null,
+        quantity: item.quantity && item.quantity > 0 ? item.quantity : 1,
+      }));
+
+    if (lines.length === 0) {
       return NextResponse.json({ error: "At least one valid product is required" }, { status: 400 });
     }
 
-    let discountAmount = 0;
-    let appliedCouponCode: string | null = null;
-    let totalAmount = subtotal;
+    const pricing = await calculateCartPricing({
+      lines,
+      couponCode: couponCode || null,
+      userId: session?.id,
+    });
 
-    if (couponCode && subtotal > 0) {
-      const validation = await validateCouponCode(couponCode, subtotal);
-      if (!validation.valid) {
-        return NextResponse.json({ error: validation.error }, { status: 400 });
-      }
-      discountAmount = validation.discountAmount;
-      totalAmount = validation.total;
-      appliedCouponCode = validation.code;
+    if (couponCode && pricing.couponBlocked) {
+      return NextResponse.json({ error: pricing.couponBlockedReason || "Coupon not allowed" }, { status: 400 });
+    }
+    if (couponCode && !pricing.couponCode) {
+      return NextResponse.json({ error: "Invalid or inapplicable coupon code" }, { status: 400 });
     }
 
     const order = await prisma.$transaction(async (tx) => {
@@ -73,18 +54,31 @@ export async function POST(req: NextRequest) {
           guestPhone: phone,
           guestCompany: company,
           notes: message,
-          subtotalAmount: subtotal > 0 ? subtotal : null,
-          discountAmount: discountAmount > 0 ? discountAmount : null,
-          couponCode: appliedCouponCode,
-          totalAmount: totalAmount > 0 ? totalAmount : null,
+          subtotalAmount: pricing.subtotal > 0 ? pricing.subtotal : null,
+          promotionDiscount: pricing.promotionDiscount > 0 ? pricing.promotionDiscount : null,
+          discountAmount: pricing.couponDiscount > 0 ? pricing.couponDiscount : null,
+          taxAmount: pricing.taxAmount > 0 ? pricing.taxAmount : null,
+          shippingAmount: pricing.shippingAmount > 0 ? pricing.shippingAmount : null,
+          couponCode: pricing.couponCode,
+          totalAmount: pricing.total > 0 ? pricing.total : null,
           status: "PENDING",
-          items: { create: orderItems },
+          items: {
+            create: pricing.lines.map((line) => ({
+              productId: line.productId,
+              variantId: line.variantId,
+              variantLabel: line.variantLabel,
+              quantity: line.quantity,
+              price: line.unitPrice > 0 ? line.unitPrice : null,
+              gstRate: line.gstRate,
+              taxAmount: line.taxAmount > 0 ? line.taxAmount : null,
+            })),
+          },
         },
       });
 
-      if (appliedCouponCode) {
+      if (pricing.couponCode) {
         await tx.coupon.update({
-          where: { code: appliedCouponCode },
+          where: { code: pricing.couponCode },
           data: { usedCount: { increment: 1 } },
         });
       }

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authenticateUser, createToken, setAuthCookie } from "@/lib/auth";
+import { createToken, setAuthCookie, verifyPassword } from "@/lib/auth";
 import { resolveLoginIdentifier } from "@/lib/login-identifier";
 import { getClientIp, rateLimit, rateLimitResponse } from "@/lib/rate-limit";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
@@ -15,10 +16,34 @@ export async function POST(req: NextRequest) {
     }
 
     const loginEmail = resolveLoginIdentifier(email);
-    const user = await authenticateUser(loginEmail, password);
-    if (!user) {
+    const dbUser = await prisma.user.findUnique({ where: { email: loginEmail } });
+
+    if (dbUser) {
+      const valid = await verifyPassword(password, dbUser.password);
+      if (valid && !dbUser.isActive) {
+        return NextResponse.json(
+          { error: "Your account is pending admin approval. You will be notified by email once approved." },
+          { status: 403 }
+        );
+      }
+    }
+
+    if (!dbUser || !dbUser.isActive) {
       return NextResponse.json({ error: "Invalid email/username or password" }, { status: 401 });
     }
+
+    const valid = await verifyPassword(password, dbUser.password);
+    if (!valid) {
+      return NextResponse.json({ error: "Invalid email/username or password" }, { status: 401 });
+    }
+
+    const user = {
+      id: dbUser.id,
+      email: dbUser.email,
+      name: dbUser.name,
+      role: dbUser.role as "USER" | "ADMIN" | "SUPER_ADMIN",
+      membershipTier: dbUser.membershipTier as "ASSOCIATE" | "FULL",
+    };
 
     const token = await createToken(user);
     await setAuthCookie(token);

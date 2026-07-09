@@ -30,6 +30,7 @@ export interface SessionUser {
   email: string;
   name: string;
   role: "USER" | "ADMIN" | "SUPER_ADMIN";
+  membershipTier: "ASSOCIATE" | "FULL";
 }
 
 export async function hashPassword(password: string) {
@@ -59,7 +60,7 @@ export async function verifyToken(token: string): Promise<SessionUser | null> {
 async function loadSessionUser(payload: SessionUser): Promise<SessionUser | null> {
   const user = await prisma.user.findUnique({
     where: { id: payload.id },
-    select: { id: true, email: true, name: true, role: true, isActive: true },
+    select: { id: true, email: true, name: true, role: true, isActive: true, membershipTier: true },
   });
 
   if (!user || !user.isActive) return null;
@@ -69,6 +70,7 @@ async function loadSessionUser(payload: SessionUser): Promise<SessionUser | null
     email: user.email,
     name: user.name,
     role: user.role as SessionUser["role"],
+    membershipTier: user.membershipTier as SessionUser["membershipTier"],
   };
 }
 
@@ -120,5 +122,6 @@ export async function authenticateUser(email: string, password: string) {
     email: user.email,
     name: user.name,
     role: user.role as SessionUser["role"],
+    membershipTier: user.membershipTier as SessionUser["membershipTier"],
   };
 }

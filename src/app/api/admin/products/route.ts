@@ -39,6 +39,8 @@ export async function POST(req: NextRequest) {
         isFeatured: data.isFeatured ?? false,
         isNew: data.isNew ?? false,
         isActive: data.isActive ?? true,
+        productType: data.productType === "BUNDLE" ? "BUNDLE" : "SIMPLE",
+        gstRate: data.gstRate != null && data.gstRate !== "" ? parseFloat(data.gstRate) : 18,
         categoryId: data.categoryId,
         seoTitle: data.seoTitle,
         seoDescription: data.seoDescription,

@@ -9,9 +9,16 @@ import { AdminInlineForm, FormField, inputClass } from "@/components/admin/Admin
 import { ActiveBadge, DetailField } from "@/components/admin/AdminDetailFields";
 import { AdminListDetailGrid } from "@/components/admin/AdminListDetailGrid";
 import { useConfirmDialog } from "@/components/admin/ConfirmDialog";
-import { FeaturedImageField } from "@/components/admin/ImageUploadField";
+import { FeaturedImageField, VideoMediaField } from "@/components/admin/ImageUploadField";
 import { useAdminListPanel } from "@/hooks/useAdminListPanel";
 import { ADMIN_PANEL_CLASS, buildAdminBreadcrumbItems } from "@/lib/admin-panel";
+import {
+  EMPTY_BANNER_FORM,
+  bannerToForm,
+  normalizeBannerPayload,
+  type BannerFormState,
+  type BannerMediaType,
+} from "@/lib/banner-form";
 
 interface Banner {
   id: string;
@@ -19,57 +26,53 @@ interface Banner {
   subtitle: string | null;
   description: string | null;
   image: string;
+  videoUrl: string | null;
   ctaText: string | null;
   ctaLink: string | null;
   isActive: boolean;
   sortOrder: number;
 }
 
-const EMPTY_FORM = {
-  title: "", subtitle: "", description: "", image: "", ctaText: "", ctaLink: "", isActive: true, sortOrder: 0,
-};
-
-function bannerToForm(b: Banner) {
-  return {
-    title: b.title ?? "",
-    subtitle: b.subtitle ?? "",
-    description: b.description ?? "",
-    image: b.image ?? "",
-    ctaText: b.ctaText ?? "",
-    ctaLink: b.ctaLink ?? "",
-    isActive: b.isActive ?? true,
-    sortOrder: b.sortOrder ?? 0,
-  };
+function mediaLabel(banner: Banner) {
+  return banner.videoUrl?.trim() ? "Video" : "Image";
 }
 
 function BannerDetailView({ item }: { item: Banner }) {
+  const isVideo = Boolean(item.videoUrl?.trim());
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <DetailField label="Media Type">{mediaLabel(item)}</DetailField>
         <DetailField label="Title">{item.title}</DetailField>
         <DetailField label="Subtitle">{item.subtitle || "—"}</DetailField>
         <DetailField label="Sort Order">{item.sortOrder}</DetailField>
         <DetailField label="Status">
           <ActiveBadge active={item.isActive} />
         </DetailField>
-        <DetailField label="CTA Text">{item.ctaText || "—"}</DetailField>
-        <DetailField label="CTA Link">
-          {item.ctaLink ? (
-            <span className="break-all text-sm">{item.ctaLink}</span>
-          ) : (
-            "—"
-          )}
-        </DetailField>
+        {!isVideo && (
+          <>
+            <DetailField label="CTA Text">{item.ctaText || "—"}</DetailField>
+            <DetailField label="CTA Link">
+              {item.ctaLink ? <span className="break-all text-sm">{item.ctaLink}</span> : "—"}
+            </DetailField>
+          </>
+        )}
       </div>
-      {item.description && (
+      {!isVideo && item.description && (
         <DetailField label="Description">
           <span className="whitespace-pre-wrap">{item.description}</span>
         </DetailField>
       )}
       {item.image && (
-        <DetailField label="Banner Image">
+        <DetailField label={isVideo ? "Poster Image" : "Banner Image"}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={item.image} alt={item.title} className="mt-2 max-h-48 rounded-sm border border-gray-200 object-cover" />
+        </DetailField>
+      )}
+      {isVideo && item.videoUrl && (
+        <DetailField label="Video">
+          <video src={item.videoUrl} controls className="mt-2 w-full max-h-48 rounded-sm border border-gray-200 bg-black" />
         </DetailField>
       )}
     </div>
@@ -80,41 +83,119 @@ function BannerFormFields({
   form,
   setForm,
 }: {
-  form: typeof EMPTY_FORM;
-  setForm: React.Dispatch<React.SetStateAction<typeof EMPTY_FORM>>;
+  form: BannerFormState;
+  setForm: React.Dispatch<React.SetStateAction<BannerFormState>>;
 }) {
+  const setMediaType = (mediaType: BannerMediaType) => {
+    setForm((prev) => ({
+      ...prev,
+      mediaType,
+      videoUrl: mediaType === "image" ? "" : prev.videoUrl,
+      ctaText: mediaType === "video" ? "" : prev.ctaText,
+      ctaLink: mediaType === "video" ? "" : prev.ctaLink,
+    }));
+  };
+
   return (
     <>
-      <FormField label="Title">
-        <input required className={inputClass} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+      <FormField label="Slide Type">
+        <div className="flex gap-2">
+          {(["image", "video"] as const).map((type) => (
+            <button
+              key={type}
+              type="button"
+              onClick={() => setMediaType(type)}
+              className={`px-4 py-2 rounded-sm text-sm border transition-colors ${
+                form.mediaType === type
+                  ? "bg-brand-deep text-white border-brand-deep"
+                  : "bg-white text-brand-navy border-gray-200 hover:border-brand-deep/40"
+              }`}
+            >
+              {type === "image" ? "Image + Text" : "Video"}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-brand-silver mt-2">
+          Active banners appear on the homepage hero carousel in sort order.
+        </p>
       </FormField>
-      <FormField label="Subtitle">
-        <input className={inputClass} value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} />
-      </FormField>
-      <FormField label="Description">
-        <textarea className={inputClass} rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-      </FormField>
-      <FormField label="Banner Image">
+
+      {form.mediaType === "image" && (
+        <>
+          <FormField label="Title">
+            <input
+              required
+              className={inputClass}
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+            />
+          </FormField>
+          <FormField label="Subtitle">
+            <input className={inputClass} value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} />
+          </FormField>
+          <FormField label="Description">
+            <textarea
+              className={inputClass}
+              rows={2}
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+            />
+          </FormField>
+        </>
+      )}
+
+      {form.mediaType === "video" && (
+        <FormField label="Internal Label">
+          <input
+            className={inputClass}
+            placeholder="Hero Video (optional)"
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+          />
+        </FormField>
+      )}
+
+      <FormField label={form.mediaType === "video" ? "Poster Image" : "Banner Image"}>
         <FeaturedImageField
           value={form.image}
           onChange={(image) => setForm({ ...form, image })}
-          hint="Shown on homepage hero carousel"
+          hint={form.mediaType === "video" ? "Shown before video loads" : "Shown on homepage hero carousel"}
         />
       </FormField>
-      <div className="grid grid-cols-2 gap-4">
-        <FormField label="CTA Text">
-          <input className={inputClass} value={form.ctaText} onChange={(e) => setForm({ ...form, ctaText: e.target.value })} />
+
+      {form.mediaType === "video" && (
+        <FormField label="Hero Video">
+          <VideoMediaField
+            value={form.videoUrl}
+            onChange={(videoUrl) => setForm({ ...form, videoUrl })}
+            hint="MP4 recommended · autoplay on homepage"
+          />
         </FormField>
-        <FormField label="CTA Link">
-          <input className={inputClass} value={form.ctaLink} onChange={(e) => setForm({ ...form, ctaLink: e.target.value })} />
-        </FormField>
-      </div>
+      )}
+
+      {form.mediaType === "image" && (
+        <div className="grid grid-cols-2 gap-4">
+          <FormField label="CTA Text">
+            <input className={inputClass} value={form.ctaText} onChange={(e) => setForm({ ...form, ctaText: e.target.value })} />
+          </FormField>
+          <FormField label="CTA Link">
+            <input className={inputClass} value={form.ctaLink} onChange={(e) => setForm({ ...form, ctaLink: e.target.value })} />
+          </FormField>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-4">
         <FormField label="Sort Order">
-          <input type="number" className={inputClass} value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: parseInt(e.target.value) })} />
+          <input
+            type="number"
+            className={inputClass}
+            value={form.sortOrder}
+            onChange={(e) => setForm({ ...form, sortOrder: parseInt(e.target.value, 10) || 0 })}
+          />
         </FormField>
         <label className="flex items-center gap-2 text-sm pt-6">
-          <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} /> Active
+          <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} />
+          Active
         </label>
       </div>
     </>
@@ -124,7 +205,7 @@ function BannerFormFields({
 export default function AdminBannersPage() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState<BannerFormState>(EMPTY_BANNER_FORM);
   const { confirm, showAlert } = useConfirmDialog();
   const panel = useAdminListPanel<Banner>();
 
@@ -138,7 +219,7 @@ export default function AdminBannersPage() {
   }, []);
 
   const openCreate = () => {
-    setForm(EMPTY_FORM);
+    setForm(EMPTY_BANNER_FORM);
     panel.openCreate();
   };
 
@@ -150,10 +231,12 @@ export default function AdminBannersPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.image.trim()) {
-      await showAlert({ variant: "warning", message: "Please upload or paste a banner image" });
+    const normalized = normalizeBannerPayload(form);
+    if ("error" in normalized) {
+      await showAlert({ variant: "warning", message: normalized.error ?? "Invalid banner data" });
       return;
     }
+
     setLoading(true);
     const editing = panel.panelMode === "edit" ? panel.selected : null;
     const url = editing ? `/api/admin/banners/${editing.id}` : "/api/admin/banners";
@@ -210,6 +293,7 @@ export default function AdminBannersPage() {
     <div>
       <AdminPageHeader
         title="Main Banners"
+        description="Manage homepage hero slides — images with text or full-screen videos."
         action={
           <Button onClick={openCreate}>
             <Plus className="w-4 h-4" /> Add Banner
@@ -223,7 +307,7 @@ export default function AdminBannersPage() {
           <DataTable
             columns={[
               { key: "title", label: "Title" },
-              { key: "subtitle", label: "Subtitle" },
+              { key: "media", label: "Type", render: (b) => mediaLabel(b) },
               { key: "isActive", label: "Active", render: (b) => (b.isActive ? "Yes" : "No") },
               { key: "sortOrder", label: "Order" },
             ]}
@@ -286,7 +370,6 @@ export default function AdminBannersPage() {
           </>
         }
       />
-
     </div>
   );
 }

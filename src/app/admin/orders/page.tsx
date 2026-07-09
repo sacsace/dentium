@@ -28,6 +28,7 @@ import {
   orderMatchesTab,
   type OrderListTab,
 } from "@/lib/order";
+import { SHIPPING_CARRIERS } from "@/lib/shipping";
 
 interface OrderItem {
   id: string;
@@ -55,6 +56,9 @@ interface Order {
   discountAmount?: string | number | null;
   couponCode?: string | null;
   totalAmount: string | number | null;
+  carrier?: string | null;
+  trackingNumber?: string | null;
+  shippedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   items?: OrderItem[];
@@ -143,6 +147,8 @@ export default function AdminOrdersPage() {
   const [selectedActive, setSelectedActive] = useState<Order | null>(null);
   const [selectedDeleted, setSelectedDeleted] = useState<DeletedOrderRecord | null>(null);
   const [editStatus, setEditStatus] = useState<OrderStatus>("PENDING");
+  const [editCarrier, setEditCarrier] = useState("");
+  const [editTracking, setEditTracking] = useState("");
   const [saving, setSaving] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [activeTab, setActiveTab] = useState<OrderListTab>("received");
@@ -201,6 +207,8 @@ export default function AdminOrdersPage() {
     setSelectedDeleted(null);
     setSelectedActive(item);
     setEditStatus(item.status);
+    setEditCarrier(item.carrier ?? "");
+    setEditTracking(item.trackingNumber ?? "");
     setLoadingDetail(true);
     try {
       const res = await fetch(`/api/admin/orders/${item.id}`);
@@ -208,6 +216,8 @@ export default function AdminOrdersPage() {
       if (res.ok) {
         setSelectedActive(data);
         setEditStatus(data.status);
+        setEditCarrier(data.carrier ?? "");
+        setEditTracking(data.trackingNumber ?? "");
       }
     } finally {
       setLoadingDetail(false);
@@ -234,11 +244,18 @@ export default function AdminOrdersPage() {
       const res = await fetch(`/api/admin/orders/${selectedActive.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: editStatus }),
+        body: JSON.stringify({
+          status: editStatus,
+          carrier: editCarrier,
+          trackingNumber: editTracking,
+        }),
       });
       const data = await res.json();
       if (res.ok) {
         setSelectedActive(data);
+        setEditStatus(data.status);
+        setEditCarrier(data.carrier ?? "");
+        setEditTracking(data.trackingNumber ?? "");
         setOrders((prev) => prev.map((o) => (o.id === data.id ? { ...o, ...data } : o)));
         refreshAdminNavBadges();
       }
@@ -459,6 +476,23 @@ export default function AdminOrdersPage() {
                   />
                 </div>
 
+                <div className="border-t pt-6 space-y-4">
+                  <h4 className="text-sm font-semibold text-brand-navy">Shipping</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField label="Carrier">
+                      <select className={inputClass} value={editCarrier} onChange={(e) => setEditCarrier(e.target.value)}>
+                        <option value="">— Select —</option>
+                        {SHIPPING_CARRIERS.map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                    </FormField>
+                    <FormField label="Tracking Number">
+                      <input className={inputClass} value={editTracking} onChange={(e) => setEditTracking(e.target.value)} placeholder="AWB / tracking #" />
+                    </FormField>
+                  </div>
+                </div>
+
                 <div className="border-t pt-6">
                   <FormField label="Update Status">
                     <select
@@ -472,8 +506,8 @@ export default function AdminOrdersPage() {
                     </select>
                   </FormField>
                   <div className="flex flex-col sm:flex-row gap-3 mt-4">
-                    <Button onClick={saveStatus} disabled={saving || editStatus === selectedActive.status} className="w-full sm:w-auto">
-                      {saving ? "Saving..." : "Save Status"}
+                    <Button onClick={saveStatus} disabled={saving} className="w-full sm:w-auto">
+                      {saving ? "Saving..." : "Save Order"}
                     </Button>
                     <Button
                       type="button"

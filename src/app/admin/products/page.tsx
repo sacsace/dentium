@@ -14,6 +14,7 @@ import { useConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { ImageUploadField } from "@/components/admin/ImageUploadField";
 import { useAdminListPanel } from "@/hooks/useAdminListPanel";
 import { ADMIN_PANEL_CLASS, buildAdminBreadcrumbItems } from "@/lib/admin-panel";
+import { ProductCommercePanel } from "@/components/admin/ProductCommercePanel";
 import { refreshAdminNavBadges } from "@/lib/admin-nav-badges";
 
 const RichTextEditor = dynamic(
@@ -44,6 +45,8 @@ interface ProductDetail extends Product {
   seoTitle: string | null;
   seoDescription: string | null;
   categoryId: string;
+  productType?: string;
+  gstRate?: unknown;
 }
 
 interface Category {
@@ -65,6 +68,8 @@ const EMPTY_FORM = {
   isFeatured: false,
   isNew: false,
   isActive: true,
+  productType: "SIMPLE" as "SIMPLE" | "BUNDLE",
+  gstRate: "18",
   imageUrls: [] as string[],
   features: "",
   tags: "",
@@ -85,6 +90,8 @@ function detailToForm(data: ProductDetail): FormState {
     isFeatured: data.isFeatured ?? false,
     isNew: data.isNew ?? false,
     isActive: data.isActive ?? true,
+    productType: (data.productType === "BUNDLE" ? "BUNDLE" : "SIMPLE") as "SIMPLE" | "BUNDLE",
+    gstRate: data.gstRate != null ? String(data.gstRate) : "18",
     imageUrls: Array.isArray(data.images) ? data.images : [],
     features: Array.isArray(data.features) ? data.features.join("\n") : "",
     tags: Array.isArray(data.tags) ? data.tags.join(", ") : "",
@@ -149,6 +156,17 @@ function ProductFormFields({
         </FormField>
         <FormField label="Brand">
           <input className={inputClass} value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} />
+        </FormField>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <FormField label="Product Type">
+          <select className={inputClass} value={form.productType} onChange={(e) => setForm({ ...form, productType: e.target.value as "SIMPLE" | "BUNDLE" })}>
+            <option value="SIMPLE">Simple</option>
+            <option value="BUNDLE">Package / Bundle</option>
+          </select>
+        </FormField>
+        <FormField label="GST Rate (%)">
+          <input type="number" min="0" max="100" step="0.01" className={inputClass} value={form.gstRate} onChange={(e) => setForm({ ...form, gstRate: e.target.value })} />
         </FormField>
       </div>
       <FormField label="Product Images">
@@ -536,6 +554,9 @@ export default function AdminProductsPage() {
             className={ADMIN_PANEL_CLASS}
           >
             <ProductFormFields form={form} setForm={setForm} categories={categories} formLoading={formLoading} editorKey={editorKey} />
+            {panel.selected && (
+              <ProductCommercePanel productId={panel.selected.id} productType={form.productType} />
+            )}
           </AdminInlineForm>
         )}
 

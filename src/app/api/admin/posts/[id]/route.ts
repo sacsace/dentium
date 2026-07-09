@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { resolveFeaturedImageForSave } from "@/lib/post-images";
 import { normalizePostStatus, POST_STATUS_ACTIVE } from "@/lib/post-status";
+import { notifySubscribersOnBlogPublish } from "@/lib/blog-notify";
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -43,6 +44,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         status === POST_STATUS_ACTIVE && !existing?.publishedAt ? new Date() : existing?.publishedAt,
     },
   });
+
+  const newlyPublished =
+    status === POST_STATUS_ACTIVE && existing?.status !== POST_STATUS_ACTIVE;
+  if (newlyPublished) {
+    notifySubscribersOnBlogPublish(post).catch(() => {});
+  }
 
   return NextResponse.json(post);
 }

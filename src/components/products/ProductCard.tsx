@@ -2,40 +2,52 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingCart, Sparkles, LogIn } from "lucide-react";
+import { ShoppingCart, Sparkles, LogIn, ShieldCheck } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { ProductLikeButton } from "@/components/products/ProductLikeButton";
 import type { ClientProduct } from "@/lib/product-client";
 import { getCartUnitPrice, getProductPriceLabel } from "@/lib/product-client";
+import type { PriceAccess } from "@/lib/membership";
 import { buildProductHref, type ShopFilterParams } from "@/lib/shop-navigation";
 
 interface ProductCardProps {
   product: ClientProduct;
+  priceAccess?: PriceAccess;
   isLoggedIn?: boolean;
   fromShop?: boolean;
   shopFilters?: ShopFilterParams;
+  likeCount?: number;
 }
 
-export function ProductCard({ product, isLoggedIn = false, fromShop, shopFilters }: ProductCardProps) {
+export function ProductCard({
+  product,
+  priceAccess = "guest",
+  isLoggedIn = false,
+  fromShop,
+  shopFilters,
+  likeCount = 0,
+}: ProductCardProps) {
   const addItem = useCartStore((s) => s.addItem);
   const productHref = fromShop
     ? buildProductHref(product.slug, { fromShop: true, filters: shopFilters })
     : `/products/${product.slug}`;
 
+  const canPurchase = priceAccess === "full";
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!isLoggedIn) return;
+    if (!canPurchase) return;
     addItem({
       productId: product.id,
       name: product.name,
       slug: product.slug,
       image: product.images[0] || "",
-      price: getCartUnitPrice(product, isLoggedIn),
+      price: getCartUnitPrice(product, priceAccess),
     });
   };
 
-  const priceLabel = getProductPriceLabel(product, isLoggedIn);
+  const priceLabel = getProductPriceLabel(product, priceAccess);
 
   return (
     <div className="group bg-white rounded-sm overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500">
@@ -50,8 +62,13 @@ export function ProductCard({ product, isLoggedIn = false, fromShop, shopFilters
             <Sparkles className="w-3 h-3" /> New
           </span>
         )}
-        <ProductLikeButton productId={product.id} className="absolute top-3 right-3" />
-        {isLoggedIn && (
+        {isLoggedIn && <ProductLikeButton productId={product.id} className="absolute top-3 right-3" />}
+        {likeCount > 0 && (
+          <span className="absolute top-3 right-14 text-xs bg-white/90 shadow px-2 py-1 rounded-full text-brand-navy">
+            ♥ {likeCount}
+          </span>
+        )}
+        {canPurchase && (
           <button
             type="button"
             onClick={handleAddToCart}
@@ -74,8 +91,15 @@ export function ProductCard({ product, isLoggedIn = false, fromShop, shopFilters
           )}
         </Link>
 
-        {isLoggedIn ? (
+        {priceAccess === "full" ? (
           <p className="text-brand-deep font-medium text-sm">{priceLabel}</p>
+        ) : priceAccess === "associate" ? (
+          <Link
+            href="/account?tab=company"
+            className="inline-flex items-center gap-1.5 text-brand-deep font-medium text-sm hover:underline"
+          >
+            <ShieldCheck className="w-3.5 h-3.5" /> Full membership required
+          </Link>
         ) : (
           <Link
             href="/auth/login"

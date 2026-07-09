@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { hashPassword, createToken, setAuthCookie } from "@/lib/auth";
+import { hashPassword } from "@/lib/auth";
+import { lookupErpCustomerByPhone } from "@/lib/bulk-erp-customer-import";
+import { normalizePhoneForLookup } from "@/lib/phone";
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,15 +16,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Name, email, and password are required" }, { status: 400 });
     }
 
+    if (!phone || !normalizePhoneForLookup(phone)) {
+      return NextResponse.json({ error: "A valid phone number is required" }, { status: 400 });
+    }
+
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
       return NextResponse.json({ error: "Email already registered" }, { status: 409 });
     }
 
+    const erpRecord = await lookupErpCustomerByPhone(phone);
+
     const fullName = name || `${firstName || ""} ${lastName || ""}`.trim();
     const hashed = await hashPassword(password);
 
-    const user = await prisma.user.create({
+    await prisma.user.create({
       data: {
         name: fullName,
         firstName,
@@ -30,6 +38,7 @@ export async function POST(req: NextRequest) {
         email,
         password: hashed,
         phone,
+        erpCustomerNumber: erpRecord?.erpCustomerNumber ?? null,
         gstin,
         dciNumber,
         panNumber,
@@ -37,20 +46,19 @@ export async function POST(req: NextRequest) {
         city,
         pincode,
         role: "USER",
+        isActive: false,
+        membershipTier: "ASSOCIATE",
       },
     });
 
-    const sessionUser = {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role as "USER",
-    };
-
-    const token = await createToken(sessionUser);
-    await setAuthCookie(token);
-
-    return NextResponse.json({ user: sessionUser });
+    return NextResponse.json({
+      success: true,
+      pendingApproval: true,
+      erpCustomerNumber: erpRecord?.erpCustomerNumber ?? null,
+      message: erpRecord
+        ? `Registration submitted (ERP #${erpRecord.erpCustomerNumber}). You will receive an email once your account is approved.`
+        : "Registration submitted. You will receive an email once your account is approved.",
+    });
   } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

@@ -6,6 +6,8 @@ import Image from "next/image";
 import { Heart } from "lucide-react";
 import { toClientProduct } from "@/lib/product-client";
 import { getProductPriceLabel } from "@/lib/product-client";
+import { useAuth } from "@/hooks/useAuth";
+import { getPriceAccess } from "@/lib/membership";
 
 type FavoriteProduct = {
   id: string;
@@ -19,6 +21,8 @@ type FavoriteProduct = {
 };
 
 export function FavoriteProductsSection() {
+  const { user } = useAuth();
+  const priceAccess = getPriceAccess(user);
   const [products, setProducts] = useState<FavoriteProduct[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -70,7 +74,7 @@ export function FavoriteProductsSection() {
                   <p className="text-brand-silver text-xs uppercase tracking-wider">{product.brand}</p>
                 )}
                 <p className="font-medium text-brand-navy truncate">{product.name}</p>
-                <p className="text-brand-deep text-sm">{getProductPriceLabel(clientProduct, true)}</p>
+                <p className="text-brand-deep text-sm">{getProductPriceLabel(clientProduct, priceAccess)}</p>
               </div>
             </Link>
           );

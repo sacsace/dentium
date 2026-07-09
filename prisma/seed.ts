@@ -391,13 +391,20 @@ async function main() {
   await prisma.banner.createMany({
     data: [
       {
+        title: "Dentium — Innovation in Dental Implants",
+        subtitle: "Hero Video",
+        image: "https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=1920",
+        videoUrl: "/videos/movie01.mp4",
+        sortOrder: 0,
+      },
+      {
         title: "Premium Dental Implant Systems",
         subtitle: "Dentium",
         description: "World-class implant systems, instruments, and clinical education for dental professionals across India.",
         image: "https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=1920",
         ctaText: "Explore Products",
         ctaLink: "/products",
-        sortOrder: 0,
+        sortOrder: 1,
       },
       {
         title: "Bright & SuperLine",
@@ -406,7 +413,7 @@ async function main() {
         image: "https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=1920",
         ctaText: "View Implant Systems",
         ctaLink: "/products?category=implant-system",
-        sortOrder: 1,
+        sortOrder: 2,
       },
       {
         title: "Dentium Smile SAGA 2024",
@@ -415,7 +422,7 @@ async function main() {
         image: "https://images.unsplash.com/photo-1511578314322-379afb476865?w=1920",
         ctaText: "View Events",
         ctaLink: "/events",
-        sortOrder: 2,
+        sortOrder: 3,
       },
     ],
   });

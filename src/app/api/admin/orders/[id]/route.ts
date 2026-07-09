@@ -33,15 +33,33 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await context.params;
-  const { status } = await req.json();
+  const body = await req.json();
+  const { status, carrier, trackingNumber, shippedAt } = body;
 
-  if (!ORDER_FULFILLMENT_STATUSES.includes(status)) {
-    return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  const data: {
+    status?: OrderStatus;
+    carrier?: string | null;
+    trackingNumber?: string | null;
+    shippedAt?: Date | null;
+  } = {};
+
+  if (status !== undefined) {
+    if (!ORDER_FULFILLMENT_STATUSES.includes(status)) {
+      return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+    }
+    data.status = status as OrderStatus;
+    if (status === "SHIPPED" && !shippedAt) {
+      data.shippedAt = new Date();
+    }
   }
+
+  if (carrier !== undefined) data.carrier = carrier || null;
+  if (trackingNumber !== undefined) data.trackingNumber = trackingNumber || null;
+  if (shippedAt !== undefined) data.shippedAt = shippedAt ? new Date(shippedAt) : null;
 
   const order = await prisma.order.update({
     where: { id },
-    data: { status: status as OrderStatus },
+    data,
     include: {
       items: {
         include: {

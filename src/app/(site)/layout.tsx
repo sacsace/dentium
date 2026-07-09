@@ -5,6 +5,8 @@ import { organizationSchema } from "@/lib/seo-schemas";
 import { VisitTracker } from "@/components/analytics/VisitTracker";
 import { CartAuthSync } from "@/components/cart/CartAuthSync";
 import { FavoritesProvider } from "@/components/favorites/FavoritesProvider";
+import { SitePopup } from "@/components/site/SitePopup";
+import { WhatsAppFloat } from "@/components/site/WhatsAppFloat";
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -13,6 +15,8 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <VisitTracker />
       <CartAuthSync />
       <FavoritesProvider>
+        <SitePopup />
+        <WhatsAppFloat />
         <Header />
         <main className="min-h-screen">{children}</main>
         <Footer />

@@ -16,6 +16,7 @@ const profileSelect = {
   lastName: true,
   company: true,
   phone: true,
+  erpCustomerNumber: true,
   gstin: true,
   dciNumber: true,
   panNumber: true,
@@ -23,6 +24,10 @@ const profileSelect = {
   city: true,
   pincode: true,
   role: true,
+  membershipTier: true,
+  licenseDocumentUrl: true,
+  fullMemberStatus: true,
+  fullMemberReviewNote: true,
 } as const;
 
 export async function GET() {
@@ -63,6 +68,7 @@ export async function PATCH(req: NextRequest) {
       state,
       city,
       pincode,
+      licenseDocumentUrl,
       currentPassword,
       newPassword,
     } = body;
@@ -92,6 +98,7 @@ export async function PATCH(req: NextRequest) {
     if (state !== undefined) data.state = state || undefined;
     if (city !== undefined) data.city = city || undefined;
     if (pincode !== undefined) data.pincode = pincode || undefined;
+    if (licenseDocumentUrl !== undefined) data.licenseDocumentUrl = licenseDocumentUrl || null;
 
     const nextFirst = firstName !== undefined ? firstName : existing.firstName;
     const nextLast = lastName !== undefined ? lastName : existing.lastName;
@@ -121,6 +128,7 @@ export async function PATCH(req: NextRequest) {
         email: user.email,
         name: user.name,
         role: user.role as "USER" | "ADMIN" | "SUPER_ADMIN",
+        membershipTier: user.membershipTier as "ASSOCIATE" | "FULL",
       });
       await setAuthCookie(token);
     }

@@ -6,12 +6,17 @@ export type UserProfile = {
   lastName: string | null;
   company: string | null;
   phone: string | null;
+  erpCustomerNumber: string | null;
   gstin: string | null;
   dciNumber: string | null;
   panNumber: string | null;
   state: string | null;
   city: string | null;
   pincode: string | null;
+  membershipTier?: "ASSOCIATE" | "FULL";
+  licenseDocumentUrl?: string | null;
+  fullMemberStatus?: "NONE" | "PENDING" | "REJECTED";
+  fullMemberReviewNote?: string | null;
 };
 
 export function isBusinessIncomplete(profile: UserProfile) {

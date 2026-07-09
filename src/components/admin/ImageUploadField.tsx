@@ -206,3 +206,60 @@ export function ImageUploadField({ value, onChange }: ImageUploadFieldProps) {
     </div>
   );
 }
+
+interface VideoMediaFieldProps {
+  value: string;
+  onChange: (url: string) => void;
+  hint?: string;
+}
+
+export function VideoMediaField({ value, onChange, hint }: VideoMediaFieldProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+
+  const handleFile = async (file: File | undefined) => {
+    if (!file || !file.type.startsWith("video/")) return;
+
+    setUploading(true);
+    setUploadError("");
+    try {
+      const url = await uploadFile(file);
+      onChange(url);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      {value && (
+        <video src={value} controls className="w-full max-h-40 rounded-sm border border-gray-200 bg-black" />
+      )}
+      <div className="flex flex-wrap items-center gap-3">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="video/mp4,video/webm"
+          className="hidden"
+          onChange={(e) => handleFile(e.target.files?.[0])}
+        />
+        <Button type="button" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
+          {uploading ? "Uploading..." : value ? "Replace Video" : "Upload Video"}
+        </Button>
+        <span className="text-xs text-brand-silver">{hint ?? "MP4 or WebM · max 50MB"}</span>
+      </div>
+      <input
+        className={inputClass}
+        placeholder="Or paste video URL (e.g. /videos/movie01.mp4)"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      {uploadError && <p className="text-sm text-red-600">{uploadError}</p>}
+    </div>
+  );
+}

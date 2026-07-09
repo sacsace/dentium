@@ -21,7 +21,7 @@ export function AddToCartButton({ product }: Props) {
           name: product.name,
           slug: product.slug,
           image: product.images[0] || "",
-          price: getCartUnitPrice(product, true),
+          price: getCartUnitPrice(product, "full"),
         })
       }
     >

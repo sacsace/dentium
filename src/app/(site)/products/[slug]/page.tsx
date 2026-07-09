@@ -3,9 +3,10 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getServerPriceContext } from "@/lib/session-price";
+import { ShieldCheck } from "lucide-react";
 import { ProductCard } from "@/components/products/ProductCard";
-import { AddToCartButton } from "@/components/products/AddToCartButton";
+import { ProductPurchaseOptions } from "@/components/products/ProductPurchaseOptions";
 import { RequestQuoteButton } from "@/components/products/RequestQuoteButton";
 import { ProductLikeButton } from "@/components/products/ProductLikeButton";
 import { toClientProduct, getProductPriceLabel } from "@/lib/product-client";
@@ -39,7 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ProductDetailPage({ params, searchParams }: Props) {
   const { slug } = await params;
   const query = await searchParams;
-  const session = await getSession();
+  const { session, priceAccess, isLoggedIn } = await getServerPriceContext();
   const backHref = getShopBackHref(query);
 
   let product = null;
@@ -48,11 +49,12 @@ export default async function ProductDetailPage({ params, searchParams }: Props)
   try {
     product = await prisma.product.findUnique({
       where: { slug },
-      include: { category: true },
+      include: { category: true, _count: { select: { likes: true } } },
     });
     if (product) {
       related = await prisma.product.findMany({
         where: { categoryId: product.categoryId, id: { not: product.id }, isActive: true },
+        include: { _count: { select: { likes: true } } },
         take: 4,
       });
     }
@@ -65,7 +67,7 @@ export default async function ProductDetailPage({ params, searchParams }: Props)
   const specs = product.specifications as Record<string, string> | null;
 
   const clientProduct = toClientProduct(product);
-  const priceLabel = getProductPriceLabel(clientProduct, Boolean(session));
+  const priceLabel = getProductPriceLabel(clientProduct, priceAccess);
 
   return (
     <>
@@ -102,8 +104,16 @@ export default async function ProductDetailPage({ params, searchParams }: Props)
               {product.shortDesc && (
                 <p className="text-brand-silver text-lg mb-6">{product.shortDesc}</p>
               )}
-              {session ? (
+              {priceAccess === "full" ? (
                 <p className="text-2xl font-semibold text-brand-deep mb-8">{priceLabel}</p>
+              ) : priceAccess === "associate" ? (
+                <Link
+                  href="/account?tab=company"
+                  className="inline-flex items-center gap-2 text-2xl font-semibold text-brand-deep mb-8 hover:underline"
+                >
+                  <ShieldCheck className="w-5 h-5" />
+                  Full membership required
+                </Link>
               ) : (
                 <Link
                   href="/auth/login"
@@ -114,11 +124,18 @@ export default async function ProductDetailPage({ params, searchParams }: Props)
                 </Link>
               )}
 
-              {session && (
-              <div className="flex flex-wrap items-center gap-3 mb-8">
-                <AddToCartButton product={clientProduct} />
+              {isLoggedIn && (
+              <div className="flex flex-wrap items-start gap-3 mb-8">
+                {priceAccess === "full" && <ProductPurchaseOptions product={clientProduct} slug={product.slug} />}
+                <div className="flex flex-wrap items-center gap-3 pt-1">
                 <RequestQuoteButton productId={product.id} productName={product.name} />
-                <ProductLikeButton productId={product.id} className="shadow-sm border border-gray-100" iconClassName="w-5 h-5" />
+                <div className="flex items-center gap-2">
+                  <ProductLikeButton productId={product.id} className="shadow-sm border border-gray-100" iconClassName="w-5 h-5" />
+                  {(product as { _count?: { likes: number } })._count?.likes ? (
+                    <span className="text-sm text-brand-silver">{(product as { _count: { likes: number } })._count.likes} likes</span>
+                  ) : null}
+                </div>
+                </div>
               </div>
               )}
 
@@ -187,7 +204,7 @@ export default async function ProductDetailPage({ params, searchParams }: Props)
               <h2 className="font-display text-2xl font-semibold text-brand-navy mb-8">Related Products</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {related.map((p) => (
-                  <ProductCard key={p.id} product={toClientProduct(p)} isLoggedIn={!!session} />
+                  <ProductCard key={p.id} product={toClientProduct(p)} priceAccess={priceAccess} isLoggedIn={isLoggedIn} likeCount={(p as { _count?: { likes: number } })._count?.likes ?? 0} />
                 ))}
               </div>
             </div>
