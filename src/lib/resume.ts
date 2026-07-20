@@ -17,6 +17,7 @@ export type ExperienceEntry = {
 };
 
 export type ResumePayload = {
+  jobId?: string;
   name: string;
   email: string;
   phone?: string;
@@ -33,6 +34,7 @@ export type ResumePayload = {
 };
 
 export const RESUME_ATTACHMENT_TYPES = [
+  "RESUME",
   "EMPLOYMENT_CERTIFICATE",
   "EMPLOYMENT_CONTRACT",
   "PAYSLIP",
@@ -44,6 +46,7 @@ export const RESUME_ATTACHMENT_TYPES = [
 export type ResumeAttachmentType = (typeof RESUME_ATTACHMENT_TYPES)[number];
 
 export const ATTACHMENT_LABELS: Record<ResumeAttachmentType, string> = {
+  RESUME: "Resume / CV",
   EMPLOYMENT_CERTIFICATE: "Previous Employment Certificate",
   EMPLOYMENT_CONTRACT: "Previous Employment Contract",
   PAYSLIP: "Previous Payslip",

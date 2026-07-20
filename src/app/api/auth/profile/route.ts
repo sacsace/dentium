@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   createToken,
@@ -7,6 +8,7 @@ import {
   setAuthCookie,
   verifyPassword,
 } from "@/lib/auth";
+import { validateNewPassword } from "@/lib/password-reset";
 
 const profileSelect = {
   id: true,
@@ -28,6 +30,7 @@ const profileSelect = {
   licenseDocumentUrl: true,
   fullMemberStatus: true,
   fullMemberReviewNote: true,
+  sessionVersion: true,
 } as const;
 
 export async function GET() {
@@ -85,7 +88,7 @@ export async function PATCH(req: NextRequest) {
       }
     }
 
-    const data: Record<string, string | undefined> = {};
+    const data: Prisma.UserUpdateInput = {};
 
     if (firstName !== undefined) data.firstName = firstName || undefined;
     if (lastName !== undefined) data.lastName = lastName || undefined;
@@ -106,6 +109,10 @@ export async function PATCH(req: NextRequest) {
     if (fullName) data.name = fullName;
 
     if (newPassword) {
+      const passwordError = validateNewPassword(newPassword);
+      if (passwordError) {
+        return NextResponse.json({ error: passwordError }, { status: 400 });
+      }
       if (!currentPassword) {
         return NextResponse.json({ error: "Current password is required" }, { status: 400 });
       }
@@ -114,6 +121,7 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ error: "Current password is incorrect" }, { status: 400 });
       }
       data.password = await hashPassword(newPassword);
+      data.sessionVersion = { increment: 1 };
     }
 
     const user = await prisma.user.update({
@@ -122,13 +130,14 @@ export async function PATCH(req: NextRequest) {
       select: profileSelect,
     });
 
-    if (user.name !== session.name || user.email !== session.email) {
+    if (user.name !== session.name || user.email !== session.email || Boolean(newPassword)) {
       const token = await createToken({
         id: user.id,
         email: user.email,
         name: user.name,
         role: user.role as "USER" | "ADMIN" | "SUPER_ADMIN",
         membershipTier: user.membershipTier as "ASSOCIATE" | "FULL",
+        sessionVersion: user.sessionVersion,
       });
       await setAuthCookie(token);
     }

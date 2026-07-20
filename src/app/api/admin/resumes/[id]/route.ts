@@ -12,7 +12,7 @@ export async function GET(_req: NextRequest, context: RouteContext) {
   const { id } = await context.params;
   const resume = await prisma.resumeApplication.findUnique({
     where: { id },
-    include: { attachments: true },
+    include: { attachments: true, job: { select: { id: true, title: true, slug: true } } },
   });
   if (!resume) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(resume);
@@ -46,6 +46,7 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
   const resume = await prisma.resumeApplication.update({
     where: { id },
     data,
+    include: { attachments: true, job: { select: { id: true, title: true, slug: true } } },
   });
 
   return NextResponse.json(resume);

@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/Button";
 import { Save, Building2, MapPin, User, Lock } from "lucide-react";
 import { INDIAN_STATES } from "@/lib/site-config";
 import { authInputClass } from "@/components/auth/AuthShell";
-import type { UserProfile } from "@/lib/profile";
 import { LicenseDocumentField } from "@/components/account/LicenseDocumentField";
 import { FullMemberUpgradeSection } from "@/components/account/FullMemberUpgradeSection";
 import type { MembershipProfile } from "@/lib/membership";
@@ -125,12 +124,20 @@ export function AccountProfileForm({ profile, view = "all" }: AccountProfileForm
     });
 
   const saveSecurity = () => {
+    if (!form.currentPassword) {
+      setError("Enter your current password.");
+      return;
+    }
     if (form.newPassword && form.newPassword !== form.confirmPassword) {
       setError("New passwords do not match");
       return;
     }
     if (!form.newPassword) {
       setError("Enter a new password to change it.");
+      return;
+    }
+    if (form.newPassword.length < 8 || !/[A-Za-z]/.test(form.newPassword) || !/\d/.test(form.newPassword)) {
+      setError("New password must be at least 8 characters and include a letter and a number.");
       return;
     }
     saveSection("security", {
@@ -219,7 +226,9 @@ export function AccountProfileForm({ profile, view = "all" }: AccountProfileForm
             saving={savingSection === "security"}
           >
             <input
+              required
               type="password"
+              autoComplete="current-password"
               placeholder="Current password"
               value={form.currentPassword}
               onChange={(e) => setForm({ ...form, currentPassword: e.target.value })}
@@ -227,20 +236,29 @@ export function AccountProfileForm({ profile, view = "all" }: AccountProfileForm
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <input
+                required
                 type="password"
+                autoComplete="new-password"
+                minLength={8}
                 placeholder="New password"
                 value={form.newPassword}
                 onChange={(e) => setForm({ ...form, newPassword: e.target.value })}
                 className={authInputClass}
               />
               <input
+                required
                 type="password"
+                autoComplete="new-password"
+                minLength={8}
                 placeholder="Confirm new password"
                 value={form.confirmPassword}
                 onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
                 className={authInputClass}
               />
             </div>
+            <p className="text-xs text-brand-silver">
+              Use at least 8 characters with at least one letter and one number.
+            </p>
           </ProfileSection>
         </>
       )}

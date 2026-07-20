@@ -70,62 +70,81 @@ export function SitePopup() {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50">
-      <div className="relative bg-white rounded-sm shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <button
-          type="button"
-          onClick={() => setVisible(false)}
-          className="absolute top-3 right-3 z-10 p-1.5 rounded-full bg-white/90 shadow hover:bg-white"
-          aria-label="Close popup"
-        >
-          <X className="w-5 h-5" />
-        </button>
+    <div className="fixed inset-0 z-[100] pointer-events-none">
+      <div
+        className="absolute inset-0 bg-brand-navy/25 backdrop-blur-[2px] pointer-events-auto"
+        onClick={() => setVisible(false)}
+        aria-hidden
+      />
 
-        <div className="p-6 pt-10">
-          <h2 className="font-display text-xl font-semibold text-brand-navy mb-4 pr-8">{popup.title}</h2>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="site-popup-title"
+        className="pointer-events-auto absolute top-[12%] right-4 md:right-8 w-[min(100%-2rem,24rem)] origin-top-right animate-[popup-in_0.35s_ease-out]"
+      >
+        <div className="relative overflow-hidden rounded-2xl border border-white/70 bg-white shadow-[0_24px_60px_rgba(10,22,40,0.28)]">
+          <div className="h-1.5 w-full bg-gradient-to-r from-brand-accent via-brand-deep to-brand-navy" />
 
-          {popup.contentType === "IMAGE" && popup.image && (
-            <div className="relative aspect-video mb-4 rounded-sm overflow-hidden bg-brand-gray">
-              <Image src={popup.image} alt={popup.title} fill className="object-cover" />
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={() => setVisible(false)}
+            className="absolute top-4 right-4 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-brand-navy shadow-sm transition-colors hover:bg-brand-gray hover:text-brand-deep"
+            aria-label="Close popup"
+          >
+            <X className="h-4 w-4" />
+          </button>
 
-          {popup.contentType === "VIDEO" && popup.videoUrl && (
-            <div className="aspect-video mb-4 rounded-sm overflow-hidden bg-black">
-              <iframe
-                src={popup.videoUrl}
-                title={popup.title}
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            </div>
-          )}
-
-          {popup.contentType === "HTML" && popup.content && (
-            <div
-              className="prose prose-sm max-w-none mb-4 text-brand-dark"
-              dangerouslySetInnerHTML={{ __html: popup.content }}
-            />
-          )}
-
-          {popup.contentType !== "HTML" && popup.content && (
-            <p className="text-brand-silver text-sm mb-4 whitespace-pre-wrap">{popup.content}</p>
-          )}
-
-          <div className="flex flex-wrap gap-3">
-            {popup.ctaText && popup.ctaLink && (
-              <Link href={popup.ctaLink} onClick={() => setVisible(false)}>
-                <Button>{popup.ctaText}</Button>
-              </Link>
-            )}
-            <button
-              type="button"
-              onClick={handleDismissToday}
-              className="text-sm text-brand-silver hover:text-brand-navy underline"
+          <div className="p-6 pt-5">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-accent">
+              Notice
+            </p>
+            <h2
+              id="site-popup-title"
+              className="font-display pr-10 text-xl font-semibold leading-snug text-brand-navy"
             >
-              Don&apos;t show again today
-            </button>
+              {popup.title}
+            </h2>
+
+            {popup.contentType === "IMAGE" && popup.image && (
+              <div className="relative mt-4 aspect-video overflow-hidden rounded-xl bg-brand-gray ring-1 ring-gray-100">
+                <Image src={popup.image} alt={popup.title} fill className="object-cover" />
+              </div>
+            )}
+
+            {popup.contentType === "VIDEO" && popup.videoUrl && (
+              <div className="mt-4 aspect-video overflow-hidden rounded-xl bg-black ring-1 ring-gray-100">
+                <iframe
+                  src={popup.videoUrl}
+                  title={popup.title}
+                  className="h-full w-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            )}
+
+            {popup.content && (
+              <div
+                className="prose prose-sm tiptap-content mt-4 max-w-none text-brand-dark [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-lg"
+                dangerouslySetInnerHTML={{ __html: popup.content }}
+              />
+            )}
+
+            <div className="mt-6 flex flex-col gap-3">
+              {popup.ctaText && popup.ctaLink && (
+                <Link href={popup.ctaLink} onClick={() => setVisible(false)} className="w-full">
+                  <Button className="w-full">{popup.ctaText}</Button>
+                </Link>
+              )}
+              <button
+                type="button"
+                onClick={handleDismissToday}
+                className="text-left text-xs font-medium text-brand-silver underline-offset-2 transition-colors hover:text-brand-navy hover:underline"
+              >
+                Don&apos;t show again today
+              </button>
+            </div>
           </div>
         </div>
       </div>

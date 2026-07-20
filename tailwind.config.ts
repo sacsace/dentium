@@ -22,8 +22,22 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
-        display: ["var(--font-playfair)", "Georgia", "serif"],
+        sans: [
+          "Pretendard Variable",
+          "Pretendard",
+          "var(--font-noto-sans-kr)",
+          "var(--font-inter)",
+          "system-ui",
+          "sans-serif",
+        ],
+        display: [
+          "var(--font-playfair)",
+          "Pretendard Variable",
+          "Pretendard",
+          "var(--font-noto-sans-kr)",
+          "Georgia",
+          "serif",
+        ],
       },
       animation: {
         "fade-in": "fadeIn 0.6s ease-out forwards",

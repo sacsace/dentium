@@ -109,7 +109,11 @@ export default function RegisterPage() {
   };
 
   return (
-    <AuthShell title="Create a Dentium Account" subtitle="Quick sign-up — company and address can be added later when you purchase">
+    <AuthShell
+      title="Create a Dentium Account"
+      subtitle="Quick sign-up — company and address can be added later when you purchase"
+      maxWidth="lg"
+    >
       {success && (
         <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-sm text-green-800 text-sm">
           {success}

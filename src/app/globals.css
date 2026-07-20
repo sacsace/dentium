@@ -1,3 +1,5 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -9,6 +11,37 @@
 
   body {
     @apply bg-white text-brand-dark antialiased;
+    font-feature-settings: "ss01" on, "ss02" on;
+    letter-spacing: -0.01em;
+  }
+
+  /* Refined Korean typography */
+  html[lang="ko"] body,
+  html[data-locale="ko"] body {
+    letter-spacing: -0.02em;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    line-height: 1.65;
+  }
+
+  html[lang="ko"] h1,
+  html[lang="ko"] h2,
+  html[lang="ko"] h3,
+  html[lang="ko"] .font-display,
+  html[data-locale="ko"] h1,
+  html[data-locale="ko"] h2,
+  html[data-locale="ko"] h3,
+  html[data-locale="ko"] .font-display {
+    font-family: "Pretendard Variable", Pretendard, var(--font-noto-sans-kr), system-ui, sans-serif;
+    letter-spacing: -0.03em;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  html[lang="ko"] nav,
+  html[data-locale="ko"] nav {
+    letter-spacing: -0.025em;
+    font-weight: 500;
   }
 
   ::selection {
@@ -151,4 +184,15 @@
 
 .tiptap-editor .tiptap-content blockquote {
   @apply border-l-4 border-brand-deep pl-3 italic my-2;
+}
+
+@keyframes popup-in {
+  from {
+    opacity: 0;
+    transform: translate3d(16px, -8px, 0) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
 }

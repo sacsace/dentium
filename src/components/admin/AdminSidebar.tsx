@@ -39,6 +39,8 @@ import {
 import { cn } from "@/lib/utils";
 import { clearCartOnLogout } from "@/components/cart/CartAuthSync";
 import { DentiumLogo } from "@/components/brand/DentiumLogo";
+import { LanguageToggle } from "@/components/layout/LanguageToggle";
+import { useLanguage } from "@/i18n/LanguageProvider";
 
 type MenuItem = {
   label: string;
@@ -96,6 +98,7 @@ const menuSections: MenuSection[] = [
     items: [
       { label: "Inquiries", href: "/admin/inquiries", icon: MessageSquare },
       { label: "Newsletter", href: "/admin/newsletter", icon: Mail },
+      { label: "Job Postings", href: "/admin/jobs", icon: Briefcase },
       { label: "Resumes", href: "/admin/resumes", icon: Briefcase },
     ],
   },
@@ -168,6 +171,7 @@ type AdminSidebarProps = {
 
 export function AdminSidebar({ mobileOpen = false, onClose }: AdminSidebarProps) {
   const pathname = usePathname();
+  const { t } = useLanguage();
   const [badges, setBadges] = useState<NavBadges>({ orders: 0 });
   const activeSection = useMemo(() => findSectionForPath(pathname), [pathname]);
   const [openSection, setOpenSection] = useState<string | null>(activeSection);
@@ -253,7 +257,7 @@ export function AdminSidebar({ mobileOpen = false, onClose }: AdminSidebarProps)
                 )}
               >
                 <item.icon className="w-4 h-4 shrink-0" />
-                <span className="truncate">{item.label}</span>
+                <span className="truncate">{t(item.label)}</span>
               </Link>
             );
           })}
@@ -281,7 +285,7 @@ export function AdminSidebar({ mobileOpen = false, onClose }: AdminSidebarProps)
                   aria-expanded={isOpen}
                 >
                   <section.icon className="w-4 h-4 shrink-0 opacity-80" />
-                  <span className="flex-1 text-left font-medium truncate">{section.title}</span>
+                  <span className="flex-1 text-left font-medium truncate">{t(section.title)}</span>
                   {badge > 0 && <NavBadge count={badge} subtle />}
                   <ChevronDown
                     className={cn(
@@ -308,7 +312,7 @@ export function AdminSidebar({ mobileOpen = false, onClose }: AdminSidebarProps)
                           )}
                         >
                           <item.icon className="w-3.5 h-3.5 shrink-0 opacity-70" />
-                          <span className="truncate flex-1">{item.label}</span>
+                          <span className="truncate flex-1">{t(item.label)}</span>
                           {item.badgeKey && <NavBadge count={badges[item.badgeKey]} />}
                         </Link>
                       );
@@ -322,12 +326,13 @@ export function AdminSidebar({ mobileOpen = false, onClose }: AdminSidebarProps)
       </nav>
 
       <div className="px-3 py-3 border-t border-white/10 shrink-0 space-y-1">
+        <LanguageToggle dark className="mb-2" />
         <Link
           href="/"
           onClick={onClose}
           className="block px-2.5 py-1.5 text-white/45 text-xs hover:text-white transition-colors rounded-md hover:bg-white/5"
         >
-          ← View Website
+          ← {t("View Website")}
         </Link>
         <button
           type="button"
@@ -335,7 +340,7 @@ export function AdminSidebar({ mobileOpen = false, onClose }: AdminSidebarProps)
           className="flex items-center gap-2.5 px-2.5 py-2 text-xs text-white/60 hover:text-white w-full rounded-md hover:bg-white/5 transition-colors"
         >
           <LogOut className="w-3.5 h-3.5" />
-          Logout
+          {t("Logout")}
         </button>
       </div>
     </aside>

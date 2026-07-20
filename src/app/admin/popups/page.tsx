@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { DataTable } from "@/components/admin/DataTable";
@@ -12,6 +13,16 @@ import { useConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { FeaturedImageField } from "@/components/admin/ImageUploadField";
 import { useAdminListPanel } from "@/hooks/useAdminListPanel";
 import { ADMIN_PANEL_CLASS, buildAdminBreadcrumbItems } from "@/lib/admin-panel";
+
+const RichTextEditor = dynamic(
+  () => import("@/components/admin/RichTextEditor").then((module) => module.RichTextEditor),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[320px] border border-gray-200 rounded-sm bg-brand-gray/30 animate-pulse" />
+    ),
+  }
+);
 
 type PopupContentType = "IMAGE" | "VIDEO" | "HTML";
 type PopupDisplayTarget = "ALL" | "MOBILE" | "DESKTOP";
@@ -67,9 +78,11 @@ function popupToForm(p: Popup) {
 function PopupFormFields({
   form,
   setForm,
+  editorKey,
 }: {
   form: typeof EMPTY_FORM;
   setForm: React.Dispatch<React.SetStateAction<typeof EMPTY_FORM>>;
+  editorKey: number;
 }) {
   return (
     <>
@@ -102,8 +115,16 @@ function PopupFormFields({
           <input className={inputClass} value={form.videoUrl} onChange={(e) => setForm({ ...form, videoUrl: e.target.value })} placeholder="https://www.youtube.com/embed/..." />
         </FormField>
       )}
-      <FormField label={form.contentType === "HTML" ? "HTML Content" : "Description"}>
-        <textarea className={inputClass} rows={form.contentType === "HTML" ? 6 : 3} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} />
+      <FormField label="Description">
+        <RichTextEditor
+          key={editorKey}
+          value={form.content}
+          onChange={(content) => setForm((previous) => ({ ...previous, content }))}
+          placeholder="Write the popup description and add images..."
+        />
+        <p className="mt-1.5 text-xs text-brand-silver">
+          Use the image button in the toolbar to upload an image into the description.
+        </p>
       </FormField>
       <div className="grid grid-cols-2 gap-4">
         <FormField label="CTA Text"><input className={inputClass} value={form.ctaText} onChange={(e) => setForm({ ...form, ctaText: e.target.value })} /></FormField>
@@ -132,7 +153,14 @@ function PopupDetailView({ item }: { item: Popup }) {
         <DetailField label="Start">{item.startDate ? new Date(item.startDate).toLocaleDateString() : "—"}</DetailField>
         <DetailField label="End">{item.endDate ? new Date(item.endDate).toLocaleDateString() : "—"}</DetailField>
       </div>
-      {item.content && <DetailField label="Content"><span className="whitespace-pre-wrap text-sm">{item.content}</span></DetailField>}
+      {item.content && (
+        <DetailField label="Content">
+          <div
+            className="prose prose-sm max-w-none tiptap-content"
+            dangerouslySetInnerHTML={{ __html: item.content }}
+          />
+        </DetailField>
+      )}
     </div>
   );
 }
@@ -141,6 +169,7 @@ export default function AdminPopupsPage() {
   const [popups, setPopups] = useState<Popup[]>([]);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [editorKey, setEditorKey] = useState(0);
   const { confirm, showAlert } = useConfirmDialog();
   const panel = useAdminListPanel<Popup>();
 
@@ -151,8 +180,18 @@ export default function AdminPopupsPage() {
 
   useEffect(() => { fetchData(); }, []);
 
-  const openCreate = () => { setForm(EMPTY_FORM); panel.openCreate(); };
-  const openEditFromDetail = () => { if (panel.selected) { setForm(popupToForm(panel.selected)); panel.openEdit(); } };
+  const openCreate = () => {
+    setForm(EMPTY_FORM);
+    setEditorKey((key) => key + 1);
+    panel.openCreate();
+  };
+  const openEditFromDetail = () => {
+    if (panel.selected) {
+      setForm(popupToForm(panel.selected));
+      setEditorKey((key) => key + 1);
+      panel.openEdit();
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,12 +241,12 @@ export default function AdminPopupsPage() {
             )}
             {panel.panelMode === "edit" && panel.selected && (
               <AdminInlineForm title="Edit Popup" breadcrumb={<AdminPanelBreadcrumb items={breadcrumbItems} onNavigate={panel.handleBreadcrumbNavigate} />} cancelLabel="Back to details" onSubmit={handleSubmit} onCancel={panel.cancelForm} loading={loading} className={ADMIN_PANEL_CLASS}>
-                <PopupFormFields form={form} setForm={setForm} />
+                <PopupFormFields form={form} setForm={setForm} editorKey={editorKey} />
               </AdminInlineForm>
             )}
             {panel.panelMode === "create" && (
               <AdminInlineForm title="Add Popup" breadcrumb={<AdminPanelBreadcrumb items={breadcrumbItems} onNavigate={panel.handleBreadcrumbNavigate} />} onSubmit={handleSubmit} onCancel={panel.cancelForm} loading={loading} className={ADMIN_PANEL_CLASS}>
-                <PopupFormFields form={form} setForm={setForm} />
+                <PopupFormFields form={form} setForm={setForm} editorKey={editorKey} />
               </AdminInlineForm>
             )}
           </>

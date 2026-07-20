@@ -142,6 +142,7 @@ model User {
   fullMemberStatus FullMemberApplicationStatus @default(NONE)
   fullMemberRequestedAt DateTime?
   fullMemberReviewNote String?
+  sessionVersion Int      @default(0)
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -150,6 +151,20 @@ model User {
   productLikes    ProductLike[]
   returnRequests  ReturnRequest[]
   ledgerRequests  LedgerRequest[]
+  passwordResetTokens PasswordResetToken[]
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Category {
@@ -311,12 +326,20 @@ enum ResumeStatus {
 }
 
 enum ResumeAttachmentType {
+  RESUME
   EMPLOYMENT_CERTIFICATE
   EMPLOYMENT_CONTRACT
   PAYSLIP
   GRADUATION_CERTIFICATE
   TRANSCRIPT
   OTHER
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
 }
 
 model SiteSettings {
@@ -393,6 +416,10 @@ model ResumeApplication {
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
   attachments   ResumeAttachment[]
+  jobId         String?
+  job           JobPosting?        @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  @@index([jobId])
 }
 
 model ResumeAttachment {
@@ -403,6 +430,27 @@ model ResumeAttachment {
   fileName      String
   fileUrl       String
   createdAt     DateTime             @default(now())
+}
+
+model JobPosting {
+  id             String             @id @default(cuid())
+  title          String
+  slug           String             @unique
+  department     String
+  location       String?
+  employmentType EmploymentType     @default(FULL_TIME)
+  summary        String?
+  description    String             @db.Text
+  requirements   String?            @db.Text
+  isActive       Boolean            @default(true)
+  sortOrder      Int                @default(0)
+  publishedAt    DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  applications   ResumeApplication[]
+
+  @@index([isActive, sortOrder])
+  @@index([department])
 }
 
 model Order {

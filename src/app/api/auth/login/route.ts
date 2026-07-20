@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
       name: dbUser.name,
       role: dbUser.role as "USER" | "ADMIN" | "SUPER_ADMIN",
       membershipTier: dbUser.membershipTier as "ASSOCIATE" | "FULL",
+      sessionVersion: dbUser.sessionVersion,
     };
 
     const token = await createToken(user);

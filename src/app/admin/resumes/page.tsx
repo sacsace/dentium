@@ -54,6 +54,7 @@ interface ResumeApplication {
   reviewedAt: string | null;
   createdAt: string;
   attachments: ResumeAttachment[];
+  job: { id: string; title: string; slug: string } | null;
 }
 
 const STATUS_LABELS: Record<ResumeStatus, string> = {
@@ -437,9 +438,7 @@ export default function AdminResumesPage() {
                 <td className="px-4 py-3 text-brand-dark">{item.name}</td>
                 <td className="px-4 py-3 text-brand-dark">{item.email}</td>
                 <td className="px-4 py-3 text-brand-dark">{getJobCategoryLabel(item.positionCategory)}</td>
-                <td className="px-4 py-3 text-brand-dark">
-                  {item.positionCategory === "CUSTOM" ? item.position || "—" : "—"}
-                </td>
+                <td className="px-4 py-3 text-brand-dark">{item.job?.title || item.position || "—"}</td>
                 <td className="px-4 py-3 text-brand-dark text-xs">
                   {resumeMatchesExperienceFilter(item, "EXPERIENCED") ? (
                     <span className="text-brand-deep">Experienced</span>
@@ -498,7 +497,7 @@ export default function AdminResumesPage() {
                 <div><span className="text-brand-silver">Email</span><p className="font-medium">{selected.email}</p></div>
                 <div><span className="text-brand-silver">Phone</span><p className="font-medium">{selected.phone || "—"}</p></div>
                 <div><span className="text-brand-silver">Department</span><p className="font-medium">{getJobCategoryLabel(selected.positionCategory)}</p></div>
-                <div><span className="text-brand-silver">Position</span><p className="font-medium">{formatAppliedPosition(selected.positionCategory, selected.position)}</p></div>
+                <div><span className="text-brand-silver">Position</span><p className="font-medium">{selected.job?.title || formatAppliedPosition(selected.positionCategory, selected.position)}</p></div>
                 <div><span className="text-brand-silver">Date of Birth</span><p className="font-medium">{selected.dateOfBirth || "—"}</p></div>
                 <div className="col-span-2"><span className="text-brand-silver">Address</span><p className="font-medium">{selected.address || "—"}</p></div>
                 <div><span className="text-brand-silver">Submitted</span><p className="font-medium">{new Date(selected.createdAt).toLocaleString()}</p></div>

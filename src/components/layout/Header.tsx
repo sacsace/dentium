@@ -12,11 +12,14 @@ import { cn } from "@/lib/utils";
 import { megaMenuItems } from "@/lib/navigation";
 import { useAuth, notifyAuthChange } from "@/hooks/useAuth";
 import { DentiumLogo } from "@/components/brand/DentiumLogo";
+import { LanguageToggle } from "@/components/layout/LanguageToggle";
+import { useLanguage } from "@/i18n/LanguageProvider";
 
 export function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const isHome = pathname === "/";
 
   const [isOpen, setIsOpen] = useState(false);
@@ -74,7 +77,7 @@ export function Header() {
     ? "text-brand-navy hover:bg-brand-light/80"
     : "text-brand-dark hover:bg-brand-gray";
 
-  const displayName = user?.name?.split(" ")[0] || user?.name || "Account";
+  const displayName = user?.name?.split(" ")[0] || user?.name || t("Account");
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -110,7 +113,7 @@ export function Header() {
             <DentiumLogo href="/" size="md" variant="primary" priority className="relative z-10 hidden lg:flex" />
 
             <nav
-              className="hidden xl:flex items-center justify-center flex-1 gap-0 mx-8"
+              className="hidden lg:flex min-w-0 flex-1 items-center justify-center gap-0 mx-1 xl:mx-2 2xl:mx-4"
               onMouseEnter={() => setMenuOpen(true)}
             >
               {megaMenuItems.map((item, index) => (
@@ -122,25 +125,26 @@ export function Header() {
                     setActiveColumn(index);
                   }}
                   className={cn(
-                    "px-5 py-6 text-[15px] font-medium transition-colors duration-200 relative",
+                    "relative shrink-0 whitespace-nowrap px-2 xl:px-2.5 2xl:px-4 py-6 text-[12.5px] xl:text-[13px] 2xl:text-[14px] font-medium transition-colors duration-200",
                     menuOpen && activeColumn === index ? navActive : navText
                   )}
                 >
-                  {item.label}
+                  {t(item.label)}
                   {menuOpen && activeColumn === index && (
                     <motion.span
                       layoutId="nav-underline"
-                      className="absolute bottom-3 left-5 right-5 h-0.5 bg-brand-accent"
+                      className="absolute bottom-3 left-2 right-2 xl:left-2.5 xl:right-2.5 2xl:left-4 2xl:right-4 h-0.5 bg-brand-accent"
                     />
                   )}
                 </Link>
               ))}
             </nav>
 
-            <div className="flex items-center gap-1 shrink-0">
-              <div className="hidden lg:block w-52 xl:w-64 mr-2">
+            <div className="flex items-center gap-0.5 shrink-0">
+              <div className="hidden md:block w-32 lg:w-36 xl:w-44 2xl:w-56 mr-1.5">
                 <SiteSearch />
               </div>
+              <LanguageToggle compact className="mr-0.5" />
               <Link href="/shop/cart" className={cn("relative p-2.5 rounded-sm transition-colors", iconBtn)}>
                 <ShoppingCart className="w-5 h-5" />
                 {mounted && cartItems > 0 && (
@@ -154,7 +158,7 @@ export function Header() {
                   <Link
                     href={user.role === "ADMIN" || user.role === "SUPER_ADMIN" ? "/admin" : "/account"}
                     className={cn(
-                      "hidden sm:inline-flex items-center gap-2 pl-1.5 pr-3 py-1.5 text-sm font-medium rounded-full border border-brand-accent/30 bg-brand-accent/10 transition-colors hover:bg-brand-accent/20",
+                      "hidden sm:inline-flex items-center gap-1.5 pl-1.5 pr-2.5 py-1.5 text-sm font-medium rounded-full border border-brand-accent/30 bg-brand-accent/10 transition-colors hover:bg-brand-accent/20",
                       navText
                     )}
                     title={user.name}
@@ -162,14 +166,14 @@ export function Header() {
                     <span className="w-7 h-7 rounded-full bg-brand-accent text-brand-navy text-xs font-bold flex items-center justify-center shrink-0 font-display">
                       {displayName.charAt(0).toUpperCase()}
                     </span>
-                    <span className="max-w-[120px] truncate">{displayName}</span>
+                    <span className="max-w-[72px] 2xl:max-w-[120px] truncate">{displayName}</span>
                   </Link>
                   <button
                     type="button"
                     onClick={handleLogout}
                     className={cn("hidden sm:inline-flex p-2.5 rounded-lg transition-colors", iconBtn)}
-                    aria-label="Log out"
-                    title="Log out"
+                    aria-label={t("Log out")}
+                    title={t("Log out")}
                   >
                     <LogOut className="w-5 h-5" />
                   </button>
@@ -180,20 +184,20 @@ export function Header() {
                     href="/auth/login"
                     className={cn("hidden sm:inline-flex px-4 py-2 text-sm font-medium transition-colors", navText)}
                   >
-                    Login
+                    {t("Login")}
                   </Link>
                   <Link
                     href="/auth/register"
                     className="hidden md:inline-flex px-4 py-2 text-sm font-semibold rounded-full bg-brand-accent text-brand-navy hover:bg-brand-accent-dark transition-colors"
                   >
-                    Sign Up
+                    {t("Sign Up")}
                   </Link>
                 </>
               )}
               <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={cn("p-2.5 rounded-sm xl:hidden", iconBtn)}
-                aria-label={isOpen ? "Close menu" : "Open menu"}
+                className={cn("p-2.5 rounded-sm lg:hidden", iconBtn)}
+                aria-label={t(isOpen ? "Close menu" : "Open menu")}
               >
                 {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
@@ -208,7 +212,7 @@ export function Header() {
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
-              className="hidden xl:block overflow-hidden border-t border-brand-muted/60"
+              className="hidden lg:block overflow-hidden border-t border-brand-muted/60"
               onMouseEnter={() => setMenuOpen(true)}
             >
               <div className="glass-menu">
@@ -229,13 +233,13 @@ export function Header() {
                           href={item.href}
                           className="block text-brand-navy font-semibold text-sm mb-5 hover:text-brand-deep transition-colors"
                         >
-                          {item.label}
+                          {t(item.label)}
                         </Link>
                         {item.sections.map((section, si) => (
                           <div key={si} className={si > 0 ? "mt-5" : ""}>
                             {section.title && (
                               <p className="text-brand-silver text-[11px] uppercase tracking-wider mb-2 font-medium">
-                                {section.title}
+                                {t(section.title)}
                               </p>
                             )}
                             <ul className="space-y-2">
@@ -245,7 +249,7 @@ export function Header() {
                                     href={link.href}
                                     className="text-brand-dark/80 text-sm hover:text-brand-deep transition-colors duration-200 block py-0.5"
                                   >
-                                    {link.label}
+                                    {t(link.label)}
                                   </Link>
                                 </li>
                               ))}
@@ -267,10 +271,10 @@ export function Header() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="xl:hidden bg-white border-t border-brand-muted max-h-[80vh] overflow-y-auto shadow-soft"
+              className="lg:hidden bg-white border-t border-brand-muted max-h-[80vh] overflow-y-auto shadow-soft"
             >
               <nav className="container mx-auto px-4 py-4">
-                <div className="mb-4 lg:hidden">
+                <div className="mb-4 md:hidden">
                   <SiteSearch />
                 </div>
                 {megaMenuItems.map((item) => (
@@ -279,7 +283,7 @@ export function Header() {
                       onClick={() => setMobileExpanded(mobileExpanded === item.label ? null : item.label)}
                       className="w-full flex items-center justify-between px-2 py-4 text-brand-navy font-medium"
                     >
-                      {item.label}
+                      {t(item.label)}
                       <ChevronDown
                         className={cn("w-4 h-4 transition-transform", mobileExpanded === item.label && "rotate-180")}
                       />
@@ -296,7 +300,7 @@ export function Header() {
                             <div key={si} className="mb-3">
                               {section.title && (
                                 <p className="text-brand-accent-dark text-xs uppercase tracking-wider mb-2">
-                                  {section.title}
+                                  {t(section.title)}
                                 </p>
                               )}
                               {section.links.map((link) => (
@@ -306,7 +310,7 @@ export function Header() {
                                   onClick={() => setIsOpen(false)}
                                   className="block py-2 text-brand-silver text-sm hover:text-brand-deep"
                                 >
-                                  {link.label}
+                                    {t(link.label)}
                                 </Link>
                               ))}
                             </div>
@@ -332,7 +336,7 @@ export function Header() {
                         onClick={handleLogout}
                         className="w-full py-3 bg-brand-accent/15 text-brand-navy border border-brand-accent/40 rounded-lg text-sm font-medium"
                       >
-                        Log out
+                        {t("Log out")}
                       </button>
                     </>
                   ) : (
@@ -342,14 +346,14 @@ export function Header() {
                         onClick={() => setIsOpen(false)}
                         className="flex-1 text-center py-3 bg-brand-accent text-brand-navy rounded-sm text-sm font-medium"
                       >
-                        Login
+                        {t("Login")}
                       </Link>
                       <Link
                         href="/auth/register"
                         onClick={() => setIsOpen(false)}
                         className="flex-1 text-center py-3 bg-brand-accent text-brand-navy rounded-sm text-sm font-medium"
                       >
-                        Sign Up
+                        {t("Sign Up")}
                       </Link>
                     </>
                   )}

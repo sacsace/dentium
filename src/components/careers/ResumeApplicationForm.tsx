@@ -160,6 +160,7 @@ function FileUploadField({
   required?: boolean;
   highlight?: boolean;
 }) {
+  const isResume = type === "RESUME";
   return (
     <div>
       <label className="block text-sm font-medium text-brand-navy mb-2">
@@ -175,12 +176,22 @@ function FileUploadField({
       >
         <Upload className="w-4 h-4 text-brand-silver shrink-0" />
         <span className="text-sm text-brand-dark truncate">
-          {files.length > 0 ? `${files.length} file(s) selected` : "PDF, DOC, DOCX, JPG, PNG — max 5MB each"}
+          {files.length > 0
+            ? isResume
+              ? files[0].name
+              : `${files.length} file(s) selected`
+            : isResume
+              ? "PDF, DOC, or DOCX — max 5MB"
+              : "PDF, DOC, DOCX, JPG, PNG — max 5MB each"}
         </span>
         <input
           type="file"
-          multiple
-          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,application/pdf,image/*"
+          multiple={!isResume}
+          accept={
+            isResume
+              ? ".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              : ".pdf,.doc,.docx,.jpg,.jpeg,.png,application/pdf,image/*"
+          }
           className="hidden"
           onChange={(e) => onChange(Array.from(e.target.files ?? []))}
         />
@@ -205,7 +216,15 @@ function FileUploadField({
   );
 }
 
-export function ResumeApplicationForm() {
+export function ResumeApplicationForm({
+  jobId,
+  jobTitle,
+  jobDepartment,
+}: {
+  jobId?: string;
+  jobTitle?: string;
+  jobDepartment?: string;
+}) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -248,8 +267,8 @@ export function ResumeApplicationForm() {
     name: "",
     email: "",
     phone: "",
-    positionCategory: "",
-    position: "",
+    positionCategory: jobDepartment || "",
+    position: jobTitle || "",
     dateOfBirth: "",
     address: "",
     summary: "",
@@ -264,6 +283,7 @@ export function ResumeApplicationForm() {
   const [education, setEducation] = useState<EducationEntry[]>([emptyEducation()]);
   const [experience, setExperience] = useState<ExperienceEntry[]>([emptyExperience()]);
   const [attachments, setAttachments] = useState<Record<ResumeAttachmentType, File[]>>({
+    RESUME: [],
     EMPLOYMENT_CERTIFICATE: [],
     EMPLOYMENT_CONTRACT: [],
     PAYSLIP: [],
@@ -287,12 +307,13 @@ export function ResumeApplicationForm() {
 
   const resetForm = () => {
     setPersonal({
-      name: "", email: "", phone: "", positionCategory: "", position: "", dateOfBirth: "", address: "",
+      name: "", email: "", phone: "", positionCategory: jobDepartment || "", position: jobTitle || "", dateOfBirth: "", address: "",
       summary: "", skills: "", languages: "", hasExperience: false,
     });
     setEducation([emptyEducation()]);
     setExperience([emptyExperience()]);
     setAttachments({
+      RESUME: [],
       EMPLOYMENT_CERTIFICATE: [], EMPLOYMENT_CONTRACT: [], PAYSLIP: [],
       GRADUATION_CERTIFICATE: [], TRANSCRIPT: [], OTHER: [],
     });
@@ -311,6 +332,9 @@ export function ResumeApplicationForm() {
     }
     if (!personal.positionCategory) {
       return { message: "Please select a department / role.", field: "positionCategory" };
+    }
+    if (attachments.RESUME.length === 0) {
+      return { message: "Please upload your resume in PDF or Word format.", field: "attachments" };
     }
     if (personal.positionCategory === "CUSTOM" && !personal.position.trim()) {
       return { message: "You selected Other — please specify your desired position.", field: "position" };
@@ -348,6 +372,7 @@ export function ResumeApplicationForm() {
 
     const payload = {
       ...personal,
+      jobId,
       education: validEducation,
       experience: validExperience,
     };
@@ -396,7 +421,9 @@ export function ResumeApplicationForm() {
     <form onSubmit={handleSubmit} noValidate className="space-y-6 w-full">
       <div className="bg-brand-navy text-white rounded-sm p-6 md:p-8">
         <p className="text-brand-accent text-xs tracking-widest uppercase mb-2">Careers at Dentium</p>
-        <h2 className="text-2xl md:text-3xl font-semibold font-display">Write Your Resume</h2>
+        <h2 className="text-2xl md:text-3xl font-semibold font-display">
+          {jobTitle ? `Apply for ${jobTitle}` : "Write Your Resume"}
+        </h2>
         <p className="text-white/70 text-sm mt-2 max-w-2xl">
           Fill in your education and work history below, then attach supporting documents (certificates, contracts, transcripts, etc.).
         </p>
@@ -454,6 +481,7 @@ export function ResumeApplicationForm() {
               ref={fieldRefs.positionCategory}
               className={fieldInputClass("positionCategory", activeField)}
               value={personal.positionCategory}
+              disabled={Boolean(jobId)}
               onChange={(e) => {
                 setPersonal({ ...personal, positionCategory: e.target.value, position: e.target.value === "CUSTOM" ? personal.position : "" });
                 setActiveField(null);
@@ -465,6 +493,11 @@ export function ResumeApplicationForm() {
               ))}
             </select>
           </div>
+          {jobId && (
+            <div className="sm:col-span-2 lg:col-span-3 text-sm text-brand-deep bg-brand-accent/10 border border-brand-accent/20 rounded-sm px-3 py-2">
+              Selected opening: <strong>{jobTitle}</strong>
+            </div>
+          )}
           {personal.positionCategory === "CUSTOM" && (
             <div className="sm:col-span-2 lg:col-span-3">
               <label className="block text-sm font-medium text-brand-navy mb-1">Specify Position *</label>
@@ -640,8 +673,8 @@ export function ResumeApplicationForm() {
       <div className={sectionClass}>
         <SectionTitle
           step="Section 6"
-          title="Supporting Documents"
-          subtitle="Attach certificates and documents to verify your education and employment history"
+          title="Resume & Supporting Documents"
+          subtitle="Upload your resume in PDF or Word format and attach supporting documents"
         />
 
         <div
@@ -667,6 +700,21 @@ export function ResumeApplicationForm() {
         </div>
 
         <div className="space-y-5">
+          <div>
+            <h4 className="text-sm font-semibold text-brand-navy mb-3">Resume / CV *</h4>
+            <div className="max-w-xl">
+              <FileUploadField
+                type="RESUME"
+                files={attachments.RESUME}
+                onChange={(files) => {
+                  setAttachments({ ...attachments, RESUME: files.slice(0, 1) });
+                  setActiveField(null);
+                }}
+                required
+                highlight={activeField === "attachments"}
+              />
+            </div>
+          </div>
           <div>
             <h4 className="text-sm font-semibold text-brand-navy mb-3">Academic Documents</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

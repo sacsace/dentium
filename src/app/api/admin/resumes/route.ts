@@ -7,7 +7,7 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const resumes = await prisma.resumeApplication.findMany({
-    include: { attachments: true },
+    include: { attachments: true, job: { select: { id: true, title: true, slug: true } } },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
   });
   return NextResponse.json(resumes);

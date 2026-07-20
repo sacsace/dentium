@@ -12,6 +12,12 @@ import { savePrivateFile } from "@/lib/private-storage";
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_PHOTO_SIZE = 2 * 1024 * 1024;
 const ALLOWED_EXT = /\.(pdf|doc|docx|jpg|jpeg|png)$/i;
+const ALLOWED_RESUME_EXT = /\.(pdf|doc|docx)$/i;
+const ALLOWED_RESUME_MIME = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+]);
 
 function isAllowedImage(file: File, maxSize = MAX_FILE_SIZE) {
   if (file.size > maxSize) return `Image must be ${Math.round(maxSize / (1024 * 1024))}MB or less`;
@@ -25,6 +31,15 @@ function isAllowedFile(file: File) {
   if (file.size > MAX_FILE_SIZE) return "Each file must be 5MB or less";
   if (!ALLOWED_EXT.test(file.name) && !file.type.startsWith("image/")) {
     return "Allowed formats: PDF, DOC, DOCX, JPG, PNG";
+  }
+  return null;
+}
+
+function isAllowedResume(file: File) {
+  if (file.size > MAX_FILE_SIZE) return "Resume must be 5MB or less";
+  if (!ALLOWED_RESUME_EXT.test(file.name)) return "Resume format must be PDF, DOC, or DOCX";
+  if (file.type && !ALLOWED_RESUME_MIME.has(file.type)) {
+    return "Resume format must be PDF, DOC, or DOCX";
   }
   return null;
 }
@@ -73,6 +88,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "You selected Other — please specify your desired position.", field: "position" }, { status: 400 });
     }
 
+    const selectedJob = payload.jobId
+      ? await prisma.jobPosting.findFirst({
+          where: { id: payload.jobId, isActive: true },
+          select: { id: true, title: true, department: true },
+        })
+      : null;
+    if (payload.jobId && !selectedJob) {
+      return NextResponse.json(
+        { error: "This job posting is no longer accepting applications.", field: "positionCategory" },
+        { status: 400 }
+      );
+    }
+
     let photoUrl: string | null = null;
     const photoFile = formData.get("photo");
     if (photoFile instanceof File && photoFile.size > 0) {
@@ -86,8 +114,21 @@ export async function POST(req: NextRequest) {
 
     const graduationFiles = formData.getAll("file_GRADUATION_CERTIFICATE") as File[];
     const transcriptFiles = formData.getAll("file_TRANSCRIPT") as File[];
+    const resumeFiles = formData.getAll("file_RESUME") as File[];
     const hasGraduation = graduationFiles.some((f) => f instanceof File && f.size > 0);
     const hasTranscript = transcriptFiles.some((f) => f instanceof File && f.size > 0);
+    const resumeFile = resumeFiles.find((f) => f instanceof File && f.size > 0);
+
+    if (!resumeFile) {
+      return NextResponse.json(
+        { error: "Please upload your resume in PDF or Word format.", field: "attachments" },
+        { status: 400 }
+      );
+    }
+    const resumeError = isAllowedResume(resumeFile);
+    if (resumeError) {
+      return NextResponse.json({ error: resumeError, field: "attachments" }, { status: 400 });
+    }
 
     if (!hasGraduation) {
       return NextResponse.json({ error: "Please attach your graduation certificate.", field: "attachments" }, { status: 400 });
@@ -121,8 +162,9 @@ export async function POST(req: NextRequest) {
         name: payload.name.trim(),
         email: payload.email.trim(),
         phone: payload.phone?.trim() || null,
-        positionCategory: payload.positionCategory.trim(),
-        position: payload.position?.trim() || null,
+        positionCategory: selectedJob?.department || payload.positionCategory.trim(),
+        position: selectedJob?.title || payload.position?.trim() || null,
+        jobId: selectedJob?.id || null,
         photoUrl,
         dateOfBirth: payload.dateOfBirth?.trim() || null,
         address: payload.address?.trim() || null,

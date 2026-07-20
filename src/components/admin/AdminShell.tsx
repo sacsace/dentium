@@ -6,6 +6,7 @@ import { Menu } from "lucide-react";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminDialogProvider } from "@/components/admin/ConfirmDialog";
 import { DentiumLogo } from "@/components/brand/DentiumLogo";
+import { LanguageToggle } from "@/components/layout/LanguageToggle";
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -35,7 +36,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <Menu className="w-6 h-6" />
         </button>
         <DentiumLogo href="/admin" size="sm" variant="wordmark" className="opacity-95" />
-        <span className="text-[10px] text-brand-accent/90 uppercase tracking-wider ml-auto">Admin</span>
+        <LanguageToggle compact dark className="ml-auto" />
+        <span className="text-[10px] text-brand-accent/90 uppercase tracking-wider">Admin</span>
         </header>
 
         {mobileOpen && (

@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
-import { SITE_URL } from "@/lib/seo";
+import { absoluteUrl, SITE_URL } from "@/lib/seo";
+
+export const revalidate = 3600;
 
 const STATIC_ROUTES: { path: string; priority: number; changeFrequency: MetadataRoute.Sitemap[0]["changeFrequency"] }[] = [
   { path: "/", priority: 1, changeFrequency: "daily" },
@@ -18,6 +20,7 @@ const STATIC_ROUTES: { path: string; priority: number; changeFrequency: Metadata
   { path: "/gallery", priority: 0.5, changeFrequency: "monthly" },
   { path: "/video-library", priority: 0.6, changeFrequency: "monthly" },
   { path: "/dentium-study", priority: 0.7, changeFrequency: "monthly" },
+  { path: "/site-map", priority: 0.5, changeFrequency: "monthly" },
   { path: "/privacy", priority: 0.3, changeFrequency: "yearly" },
   { path: "/terms", priority: 0.3, changeFrequency: "yearly" },
 ];
@@ -33,12 +36,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     const [products, posts, events, categories] = await Promise.all([
-      prisma.product.findMany({ where: { isActive: true }, select: { slug: true, updatedAt: true } }),
+      prisma.product.findMany({
+        where: { isActive: true },
+        select: { slug: true, updatedAt: true, images: true },
+      }),
       prisma.post.findMany({
         where: { status: "PUBLISHED" },
-        select: { slug: true, updatedAt: true, publishedAt: true },
+        select: { slug: true, updatedAt: true, publishedAt: true, featuredImage: true },
       }),
-      prisma.event.findMany({ select: { slug: true, updatedAt: true } }),
+      prisma.event.findMany({ select: { slug: true, updatedAt: true, featuredImage: true } }),
       prisma.category.findMany({ where: { isActive: true }, select: { slug: true, updatedAt: true } }),
     ]);
 
@@ -48,6 +54,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: product.updatedAt,
         changeFrequency: "weekly",
         priority: 0.8,
+        images: product.images.filter(Boolean).map(absoluteUrl),
       });
     }
 
@@ -57,6 +64,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: post.updatedAt,
         changeFrequency: "monthly",
         priority: 0.7,
+        images: post.featuredImage ? [absoluteUrl(post.featuredImage)] : undefined,
       });
     }
 
@@ -66,6 +74,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: event.updatedAt,
         changeFrequency: "weekly",
         priority: 0.6,
+        images: event.featuredImage ? [absoluteUrl(event.featuredImage)] : undefined,
       });
     }
 
