@@ -5,7 +5,6 @@ import { ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useCartStore } from "@/store/cart";
 import type { ClientProduct } from "@/lib/product-client";
-import { getCartUnitPrice } from "@/lib/product-client";
 import { formatPrice } from "@/lib/utils";
 
 type Variant = { id: string; name: string; sku: string | null; price: number | null };

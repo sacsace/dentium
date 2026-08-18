@@ -9,8 +9,6 @@ import { useCartStore } from "@/store/cart";
 import { Button } from "@/components/ui/Button";
 import { formatPrice } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { formatDiscountLabel, type DiscountType } from "@/lib/coupon-utils";
-
 type PricingBreakdown = {
   subtotal: number;
   promotionDiscount: number;

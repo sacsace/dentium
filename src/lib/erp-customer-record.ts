@@ -29,7 +29,6 @@ export async function findErpCustomerConflict(
   const excludeId = input.excludeId;
   const erpCustomerNumber = input.erpCustomerNumber?.trim();
   const gstNo = input.gstNo?.trim();
-  const phoneNormalized = input.phone ? normalizePhoneForLookup(input.phone) : null;
 
   if (erpCustomerNumber) {
     const byNumber = await prisma.erpCustomerRecord.findFirst({

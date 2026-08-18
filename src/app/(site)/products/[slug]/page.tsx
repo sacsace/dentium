@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ProductDetailPage({ params, searchParams }: Props) {
   const { slug } = await params;
   const query = await searchParams;
-  const { session, priceAccess, isLoggedIn } = await getServerPriceContext();
+  const { priceAccess, isLoggedIn } = await getServerPriceContext();
   const backHref = getShopBackHref(query);
 
   let product = null;

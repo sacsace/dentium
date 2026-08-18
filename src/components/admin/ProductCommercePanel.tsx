@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { FormField, inputClass } from "@/components/admin/AdminForm";
+import { inputClass } from "@/components/admin/AdminForm";
 
 type VariantRow = { name: string; sku: string; price: string; isActive: boolean };
 type BundleRow = { componentProductId: string; quantity: string; optionGroup: string };

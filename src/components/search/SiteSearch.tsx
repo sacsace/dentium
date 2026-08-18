@@ -113,9 +113,11 @@ export function SiteSearch({ variant = "header", className, autoFocus }: SiteSea
               ? "pl-5 pr-12 py-3.5 border-gray-200 bg-white"
               : "pl-4 pr-10 py-2 border-brand-muted/60 bg-white/90"
           )}
+          role="combobox"
           aria-label="Site search"
           aria-expanded={open}
           aria-controls="site-search-dropdown"
+          aria-autocomplete="list"
         />
         {query && (
           <button
