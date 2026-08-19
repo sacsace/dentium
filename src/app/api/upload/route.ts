@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { savePublicFile } from "@/lib/private-storage";
+import { isUploadableFile } from "@/lib/upload-file";
 
 export const runtime = "nodejs";
 
@@ -13,7 +14,7 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const file = formData.get("file");
-    if (!(file instanceof File)) {
+    if (!isUploadableFile(file)) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 

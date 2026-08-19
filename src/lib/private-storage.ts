@@ -1,5 +1,6 @@
 import path from "path";
 import { mkdir, readFile, writeFile } from "fs/promises";
+import type { UploadableFile } from "@/lib/upload-file";
 
 export const PRIVATE_FILE_PREFIX = "private:";
 export const PUBLIC_FILE_PREFIX = "public:";
@@ -53,7 +54,7 @@ function detectContentType(fileName: string) {
   return "application/octet-stream";
 }
 
-export async function savePrivateFile(file: File, subdir: string) {
+export async function savePrivateFile(file: UploadableFile, subdir: string) {
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
   const { private: storageRoot } = getStorageRoots();
@@ -70,7 +71,7 @@ export async function savePrivateFile(file: File, subdir: string) {
   };
 }
 
-export async function savePublicFile(file: File, subdir: string) {
+export async function savePublicFile(file: UploadableFile, subdir: string) {
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
   if (buffer.length === 0) {

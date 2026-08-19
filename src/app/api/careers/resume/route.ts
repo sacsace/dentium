@@ -8,6 +8,7 @@ import {
 import { ResumeAttachmentType as PrismaAttachmentType } from "@prisma/client";
 import { getClientIp, rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 import { savePrivateFile } from "@/lib/private-storage";
+import { isUploadableFile, type UploadableFile } from "@/lib/upload-file";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_PHOTO_SIZE = 2 * 1024 * 1024;
@@ -19,7 +20,7 @@ const ALLOWED_RESUME_MIME = new Set([
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ]);
 
-function isAllowedImage(file: File, maxSize = MAX_FILE_SIZE) {
+function isAllowedImage(file: UploadableFile, maxSize = MAX_FILE_SIZE) {
   if (file.size > maxSize) return `Image must be ${Math.round(maxSize / (1024 * 1024))}MB or less`;
   if (!file.type.startsWith("image/") && !/\.(jpg|jpeg|png|webp)$/i.test(file.name)) {
     return "Allowed formats: JPG, PNG, WebP";
@@ -27,7 +28,7 @@ function isAllowedImage(file: File, maxSize = MAX_FILE_SIZE) {
   return null;
 }
 
-function isAllowedFile(file: File) {
+function isAllowedFile(file: UploadableFile) {
   if (file.size > MAX_FILE_SIZE) return "Each file must be 5MB or less";
   if (!ALLOWED_EXT.test(file.name) && !file.type.startsWith("image/")) {
     return "Allowed formats: PDF, DOC, DOCX, JPG, PNG";
@@ -35,7 +36,7 @@ function isAllowedFile(file: File) {
   return null;
 }
 
-function isAllowedResume(file: File) {
+function isAllowedResume(file: UploadableFile) {
   if (file.size > MAX_FILE_SIZE) return "Resume must be 5MB or less";
   if (!ALLOWED_RESUME_EXT.test(file.name)) return "Resume format must be PDF, DOC, or DOCX";
   if (file.type && !ALLOWED_RESUME_MIME.has(file.type)) {
@@ -103,7 +104,7 @@ export async function POST(req: NextRequest) {
 
     let photoUrl: string | null = null;
     const photoFile = formData.get("photo");
-    if (photoFile instanceof File && photoFile.size > 0) {
+    if (isUploadableFile(photoFile) && photoFile.size > 0) {
       const photoErr = isAllowedImage(photoFile, MAX_PHOTO_SIZE);
       if (photoErr) {
         return NextResponse.json({ error: `Profile photo: ${photoErr}`, field: "photo" }, { status: 400 });
@@ -112,12 +113,12 @@ export async function POST(req: NextRequest) {
       photoUrl = saved.storageKey;
     }
 
-    const graduationFiles = formData.getAll("file_GRADUATION_CERTIFICATE") as File[];
-    const transcriptFiles = formData.getAll("file_TRANSCRIPT") as File[];
-    const resumeFiles = formData.getAll("file_RESUME") as File[];
-    const hasGraduation = graduationFiles.some((f) => f instanceof File && f.size > 0);
-    const hasTranscript = transcriptFiles.some((f) => f instanceof File && f.size > 0);
-    const resumeFile = resumeFiles.find((f) => f instanceof File && f.size > 0);
+    const graduationFiles = formData.getAll("file_GRADUATION_CERTIFICATE");
+    const transcriptFiles = formData.getAll("file_TRANSCRIPT");
+    const resumeFiles = formData.getAll("file_RESUME");
+    const hasGraduation = graduationFiles.some((f) => isUploadableFile(f) && f.size > 0);
+    const hasTranscript = transcriptFiles.some((f) => isUploadableFile(f) && f.size > 0);
+    const resumeFile = resumeFiles.find((f) => isUploadableFile(f) && f.size > 0);
 
     if (!resumeFile) {
       return NextResponse.json(
@@ -140,9 +141,9 @@ export async function POST(req: NextRequest) {
     const attachmentRecords: { type: PrismaAttachmentType; fileName: string; fileUrl: string }[] = [];
 
     for (const type of RESUME_ATTACHMENT_TYPES) {
-      const files = formData.getAll(`file_${type}`) as File[];
+      const files = formData.getAll(`file_${type}`);
       for (const file of files) {
-        if (!file || file.size === 0) continue;
+        if (!isUploadableFile(file) || file.size === 0) continue;
         const err = isAllowedFile(file);
         if (err) return NextResponse.json({ error: `${ATTACHMENT_LABELS[type]}: ${err}` }, { status: 400 });
         const saved = await savePrivateFile(file, "resumes");
