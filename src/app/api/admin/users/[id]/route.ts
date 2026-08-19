@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, requireAdmin } from "@/lib/auth";
 import { canAssignRole, canManageUser } from "@/lib/admin-users";
+import { validateNewPassword } from "@/lib/password-reset";
 import { sendAccountApprovedEmail, sendFullMemberApprovedEmail } from "@/lib/transactional-mail";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -55,18 +56,31 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       }
     }
 
-    if (role !== undefined) {
-      if (target.role === "SUPER_ADMIN") {
-        return NextResponse.json({ error: "Super admin role cannot be changed" }, { status: 403 });
-      }
+    if (role !== undefined && role !== target.role) {
       if (!canAssignRole(session, role)) {
         return NextResponse.json({ error: "Invalid role" }, { status: 403 });
+      }
+      if (target.role === "SUPER_ADMIN") {
+        const remainingSuperAdmins = await prisma.user.count({
+          where: { role: "SUPER_ADMIN", id: { not: target.id } },
+        });
+        if (remainingSuperAdmins === 0) {
+          return NextResponse.json(
+            { error: "Create another Super Admin before changing this role." },
+            { status: 400 }
+          );
+        }
       }
       data.role = role;
     }
 
     if (password) {
+      const passwordError = validateNewPassword(password);
+      if (passwordError) {
+        return NextResponse.json({ error: passwordError }, { status: 400 });
+      }
       data.password = await hashPassword(password);
+      data.sessionVersion = { increment: 1 };
     }
 
     const user = await prisma.user.update({

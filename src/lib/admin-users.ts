@@ -2,7 +2,7 @@ import type { SessionUser } from "@/lib/auth";
 
 export const ROOT_USER_EMAIL = "root";
 
-export type AssignableRole = "USER" | "ADMIN";
+export type AssignableRole = "USER" | "ADMIN" | "SUPER_ADMIN";
 
 export function listUsersWhere(session: SessionUser) {
   if (session.role === "SUPER_ADMIN") return {};
@@ -23,7 +23,10 @@ export function canManageUser(
 }
 
 export function assignableRoles(actor: SessionUser): AssignableRole[] {
-  if (actor.role === "SUPER_ADMIN" || actor.role === "ADMIN") {
+  if (actor.role === "SUPER_ADMIN") {
+    return ["USER", "ADMIN", "SUPER_ADMIN"];
+  }
+  if (actor.role === "ADMIN") {
     return ["USER", "ADMIN"];
   }
   return [];

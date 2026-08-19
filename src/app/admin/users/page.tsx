@@ -46,17 +46,18 @@ const EMPTY_FORM = {
   isActive: true,
 };
 
-const roleOptions = [
+const ROLE_OPTIONS = [
   { value: "USER", label: "User" },
   { value: "ADMIN", label: "Admin" },
-];
+  { value: "SUPER_ADMIN", label: "Super Admin" },
+] as const;
 
 function userToForm(user: User) {
   return {
     name: user.name,
     email: user.email,
     password: "",
-    role: user.role === "ADMIN" ? "ADMIN" : "USER",
+    role: user.role,
     company: user.company || "",
     phone: user.phone || "",
     isActive: user.isActive,
@@ -141,13 +142,17 @@ function UserFormFields({
   form,
   setForm,
   isEdit,
-  isSuperAdmin,
+  canAssignSuperAdmin,
 }: {
   form: typeof EMPTY_FORM;
   setForm: React.Dispatch<React.SetStateAction<typeof EMPTY_FORM>>;
   isEdit: boolean;
-  isSuperAdmin: boolean;
+  canAssignSuperAdmin: boolean;
 }) {
+  const visibleRoles = canAssignSuperAdmin
+    ? ROLE_OPTIONS
+    : ROLE_OPTIONS.filter((option) => option.value !== "SUPER_ADMIN");
+
   return (
     <>
       <FormField label="Name">
@@ -176,6 +181,7 @@ function UserFormFields({
             className={inputClass}
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
+            placeholder="At least 8 characters, with a letter and a number"
           />
         </FormField>
       )}
@@ -188,24 +194,23 @@ function UserFormFields({
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             placeholder="Leave blank to keep current password"
           />
+          <p className="mt-1 text-xs text-brand-silver">
+            Enter a new password to change it. Minimum 8 characters, with a letter and a number.
+          </p>
         </FormField>
       )}
       <FormField label="Role">
-        {isSuperAdmin ? (
-          <input className={inputClass} value="SUPER_ADMIN" disabled />
-        ) : (
-          <select
-            className={inputClass}
-            value={form.role}
-            onChange={(e) => setForm({ ...form, role: e.target.value })}
-          >
-            {roleOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        )}
+        <select
+          className={inputClass}
+          value={form.role}
+          onChange={(e) => setForm({ ...form, role: e.target.value })}
+        >
+          {visibleRoles.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
       </FormField>
       <FormField label="Company">
         <input
@@ -239,17 +244,20 @@ function UserFormFields({
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
+  const [viewerRole, setViewerRole] = useState<string>("ADMIN");
   const [loading, setLoading] = useState(false);
   const [userFilter, setUserFilter] = useState<"all" | "pending" | "fullPending" | "active">("all");
   const [form, setForm] = useState(EMPTY_FORM);
   const { confirm, showAlert } = useConfirmDialog();
   const panel = useAdminListPanel<User>();
+  const canAssignSuperAdmin = viewerRole === "SUPER_ADMIN";
 
   const fetchData = async () => {
     const res = await fetch("/api/admin/users");
     if (!res.ok) return;
     const data = await res.json();
     setUsers(data.users ?? data);
+    if (data.viewerRole) setViewerRole(data.viewerRole);
   };
 
   useEffect(() => {
@@ -546,7 +554,7 @@ export default function AdminUsersPage() {
                   form={form}
                   setForm={setForm}
                   isEdit
-                  isSuperAdmin={panel.selected.role === "SUPER_ADMIN"}
+                  canAssignSuperAdmin={canAssignSuperAdmin}
                 />
               </AdminInlineForm>
             )}
@@ -562,7 +570,7 @@ export default function AdminUsersPage() {
                 loading={loading}
                 className={ADMIN_PANEL_CLASS}
               >
-                <UserFormFields form={form} setForm={setForm} isEdit={false} isSuperAdmin={false} />
+                <UserFormFields form={form} setForm={setForm} isEdit={false} canAssignSuperAdmin={canAssignSuperAdmin} />
               </AdminInlineForm>
             )}
           </>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, requireAdmin } from "@/lib/auth";
 import { canAssignRole, listUsersWhere } from "@/lib/admin-users";
+import { validateNewPassword } from "@/lib/password-reset";
 
 export async function GET() {
   const session = await requireAdmin();
@@ -46,6 +47,11 @@ export async function POST(req: NextRequest) {
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: "Name, email, and password are required" }, { status: 400 });
+    }
+
+    const passwordError = validateNewPassword(password);
+    if (passwordError) {
+      return NextResponse.json({ error: passwordError }, { status: 400 });
     }
 
     if (!canAssignRole(session, role)) {
