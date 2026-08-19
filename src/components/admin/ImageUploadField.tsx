@@ -6,6 +6,10 @@ import { uploadFile } from "@/lib/upload";
 import { inputClass } from "@/components/admin/AdminForm";
 import { Button } from "@/components/ui/Button";
 
+function isImageFile(file: File) {
+  return file.type.startsWith("image/") || /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(file.name);
+}
+
 interface FeaturedImageFieldProps {
   value: string;
   onChange: (url: string) => void;
@@ -20,7 +24,7 @@ export function FeaturedImageField({ value, onChange, hint, shape = "rect", hasE
   const [uploadError, setUploadError] = useState("");
 
   const handleFile = async (file: File | undefined) => {
-    if (!file || !file.type.startsWith("image/")) return;
+    if (!file || !isImageFile(file)) return;
 
     setUploading(true);
     setUploadError("");
@@ -114,7 +118,7 @@ export function ImageUploadField({ value, onChange }: ImageUploadFieldProps) {
 
     try {
       for (const file of Array.from(files)) {
-        if (!file.type.startsWith("image/")) continue;
+        if (!isImageFile(file)) continue;
         const url = await uploadFile(file);
         next.push(url);
       }

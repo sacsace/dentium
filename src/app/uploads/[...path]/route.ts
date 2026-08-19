@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readStoredFile, PUBLIC_FILE_PREFIX } from "@/lib/private-storage";
+import { readStoredFile } from "@/lib/private-storage";
 
 export const runtime = "nodejs";
 
@@ -7,6 +7,7 @@ type RouteContext = {
   params: Promise<{ path: string[] }>;
 };
 
+/** Serve legacy /uploads/* URLs (pre-migration product images, etc.) */
 export async function GET(_req: NextRequest, { params }: RouteContext) {
   const { path } = await params;
   const relativePath = path.join("/");
@@ -14,7 +15,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: "File not found" }, { status: 404 });
   }
 
-  const file = await readStoredFile(`${PUBLIC_FILE_PREFIX}${relativePath}`);
+  const file = await readStoredFile(`/uploads/${relativePath}`);
   if (!file) {
     return NextResponse.json({ error: "File not found" }, { status: 404 });
   }

@@ -18,6 +18,8 @@ const nextConfig: NextConfig = {
     ],
   },
   experimental: {
+    // Applies when middleware is added later; also documents intended upload limit.
+    middlewareClientMaxBodySize: "10mb",
     serverActions: {
       bodySizeLimit: "10mb",
     },

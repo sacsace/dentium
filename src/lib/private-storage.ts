@@ -4,20 +4,39 @@ import { mkdir, readFile, writeFile } from "fs/promises";
 export const PRIVATE_FILE_PREFIX = "private:";
 export const PUBLIC_FILE_PREFIX = "public:";
 
-const STORAGE_ROOT = path.join(process.cwd(), "storage", "private");
-const PUBLIC_STORAGE_ROOT = path.join(process.cwd(), "storage", "public");
+function resolveStorageBase() {
+  const configured = process.env.STORAGE_PATH?.trim();
+  if (configured) return path.resolve(configured);
+
+  // Railway and similar PaaS: use /tmp when no persistent volume is mounted.
+  if (process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_SERVICE_NAME) {
+    return path.join("/tmp", "dentium-india", "storage");
+  }
+
+  return path.join(process.cwd(), "storage");
+}
+
+function getStorageRoots() {
+  const base = resolveStorageBase();
+  return {
+    private: path.join(base, "private"),
+    public: path.join(base, "public"),
+  };
+}
 
 function resolvePrivatePath(relativePath: string): string | null {
+  const { private: storageRoot } = getStorageRoots();
   const normalized = path.normalize(relativePath).replace(/^(\.\.(\/|\\|$))+/, "");
-  const fullPath = path.join(STORAGE_ROOT, normalized);
-  if (!fullPath.startsWith(STORAGE_ROOT)) return null;
+  const fullPath = path.join(storageRoot, normalized);
+  if (!fullPath.startsWith(storageRoot)) return null;
   return fullPath;
 }
 
 function resolvePublicPath(relativePath: string): string | null {
+  const { public: storageRoot } = getStorageRoots();
   const normalized = path.normalize(relativePath).replace(/^(\.\.(\/|\\|$))+/, "");
-  const fullPath = path.join(PUBLIC_STORAGE_ROOT, normalized);
-  if (!fullPath.startsWith(PUBLIC_STORAGE_ROOT)) return null;
+  const fullPath = path.join(storageRoot, normalized);
+  if (!fullPath.startsWith(storageRoot)) return null;
   return fullPath;
 }
 
@@ -37,7 +56,8 @@ function detectContentType(fileName: string) {
 export async function savePrivateFile(file: File, subdir: string) {
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
-  const uploadDir = path.join(STORAGE_ROOT, subdir);
+  const { private: storageRoot } = getStorageRoots();
+  const uploadDir = path.join(storageRoot, subdir);
   await mkdir(uploadDir, { recursive: true });
 
   const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
@@ -53,7 +73,12 @@ export async function savePrivateFile(file: File, subdir: string) {
 export async function savePublicFile(file: File, subdir: string) {
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
-  const uploadDir = path.join(PUBLIC_STORAGE_ROOT, subdir);
+  if (buffer.length === 0) {
+    throw new Error("Empty file received");
+  }
+
+  const { public: storageRoot } = getStorageRoots();
+  const uploadDir = path.join(storageRoot, subdir);
   await mkdir(uploadDir, { recursive: true });
 
   const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");

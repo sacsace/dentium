@@ -17,6 +17,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
+    if (file.size === 0) {
+      return NextResponse.json(
+        { error: "Empty file received. Try again or use a smaller image." },
+        { status: 400 },
+      );
+    }
+
     const inferredName = file.name.toLowerCase();
     const isImage = file.type.startsWith("image/") || /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(inferredName);
     const isVideo = file.type.startsWith("video/") || /\.(mp4|webm)$/i.test(inferredName);
