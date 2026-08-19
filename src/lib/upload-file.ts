@@ -6,7 +6,7 @@ export interface UploadableFile {
   arrayBuffer(): Promise<ArrayBuffer>;
 }
 
-export function isUploadableFile(value: FormDataEntryValue | null | undefined): value is UploadableFile {
+export function isUploadableFile(value: unknown): value is UploadableFile {
   if (!value || typeof value !== "object") return false;
   const candidate = value as UploadableFile;
   return (

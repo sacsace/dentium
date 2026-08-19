@@ -118,15 +118,15 @@ export async function POST(req: NextRequest) {
     const resumeFiles = formData.getAll("file_RESUME");
     const hasGraduation = graduationFiles.some((f) => isUploadableFile(f) && f.size > 0);
     const hasTranscript = transcriptFiles.some((f) => isUploadableFile(f) && f.size > 0);
-    const resumeFile = resumeFiles.find((f) => isUploadableFile(f) && f.size > 0);
+    const resumeEntry = resumeFiles.find((f) => isUploadableFile(f) && f.size > 0);
 
-    if (!resumeFile) {
+    if (!isUploadableFile(resumeEntry)) {
       return NextResponse.json(
         { error: "Please upload your resume in PDF or Word format.", field: "attachments" },
         { status: 400 }
       );
     }
-    const resumeError = isAllowedResume(resumeFile);
+    const resumeError = isAllowedResume(resumeEntry);
     if (resumeError) {
       return NextResponse.json({ error: resumeError, field: "attachments" }, { status: 400 });
     }
