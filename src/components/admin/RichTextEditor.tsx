@@ -14,7 +14,7 @@ import { Table } from "@tiptap/extension-table";
 import TableRow from "@tiptap/extension-table-row";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useAdminDialog } from "@/components/admin/ConfirmDialog";
 import {
   AlignCenter,
@@ -60,6 +60,22 @@ const TEXT_COLORS = [
   "#d97706", "#dc2626", "#7c3aed", "#acc90e",
 ];
 
+const EDITOR_EXTENSIONS = [
+  StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
+  Underline,
+  Link.configure({ openOnClick: false, HTMLAttributes: { class: "text-brand-deep underline" } }),
+  TextAlign.configure({ types: ["heading", "paragraph"] }),
+  TextStyle,
+  Color,
+  FontFamily,
+  Highlight.configure({ multicolor: true }),
+  Image.configure({ inline: false, allowBase64: false }),
+  Table.configure({ resizable: true }),
+  TableRow,
+  TableHeader,
+  TableCell,
+];
+
 function ToolbarButton({
   onClick,
   active,
@@ -97,44 +113,67 @@ function ToolbarDivider() {
 async function uploadImage(file: File): Promise<string> {
   const formData = new FormData();
   formData.append("file", file);
-  const res = await fetch("/api/upload", { method: "POST", body: formData });
+  const res = await fetch("/api/upload", {
+    method: "POST",
+    body: formData,
+    credentials: "same-origin",
+  });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Upload failed");
   return data.url;
 }
 
+function normalizeEditorHtml(html: string) {
+  const trimmed = html.trim();
+  if (!trimmed || trimmed === "<p></p>" || trimmed === "<p><br></p>") return "";
+  return trimmed;
+}
+
 export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showAlert } = useAdminDialog();
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
-  const editor = useEditor({
-    immediatelyRender: false,
-    extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
-      Underline,
-      Link.configure({ openOnClick: false, HTMLAttributes: { class: "text-brand-deep underline" } }),
-      TextAlign.configure({ types: ["heading", "paragraph"] }),
-      TextStyle,
-      Color,
-      FontFamily,
-      Highlight.configure({ multicolor: true }),
-      Image.configure({ inline: false, allowBase64: false }),
-      Table.configure({ resizable: true }),
-      TableRow,
-      TableHeader,
-      TableCell,
-    ],
-    content: value,
-    editorProps: {
+  // Keep initial content stable so TipTap does not reset the doc on every keystroke.
+  const initialContentRef = useRef(value || "");
+
+  const editorProps = useMemo(
+    () => ({
       attributes: {
         class: "tiptap-content min-h-[280px] px-3 py-2 text-sm text-brand-dark focus:outline-none",
         "data-placeholder": placeholder ?? "Write content here...",
       },
+    }),
+    [placeholder],
+  );
+
+  const editor = useEditor(
+    {
+      immediatelyRender: false,
+      shouldRerenderOnTransaction: true,
+      editable: true,
+      extensions: EDITOR_EXTENSIONS,
+      content: initialContentRef.current,
+      editorProps,
+      onUpdate: ({ editor: ed }) => {
+        onChangeRef.current(normalizeEditorHtml(ed.getHTML()));
+      },
     },
-    onUpdate: ({ editor: ed }) => {
-      onChange(ed.getHTML());
-    },
-  });
+    [editorProps],
+  );
+
+  // Sync only when parent value changes externally (e.g. load another product).
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return;
+    const next = value || "";
+    const current = normalizeEditorHtml(editor.getHTML());
+    const incoming = normalizeEditorHtml(next);
+    if (incoming === current) return;
+    // Avoid clobbering while the user is composing (IME).
+    if (editor.view?.composing) return;
+    editor.commands.setContent(next || "", { emitUpdate: false });
+  }, [value, editor]);
 
   const setLink = useCallback(() => {
     if (!editor) return;
@@ -158,10 +197,12 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
         void showAlert({ variant: "error", message: "Image upload failed." });
       }
     },
-    [editor, showAlert]
+    [editor, showAlert],
   );
 
-  if (!editor) return null;
+  if (!editor) {
+    return <div className="h-[320px] border border-gray-200 rounded-sm bg-brand-gray/30 animate-pulse" />;
+  }
 
   const inTable = editor.isActive("table");
 

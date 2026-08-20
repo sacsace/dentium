@@ -137,12 +137,20 @@
 }
 
 /* TipTap editor */
-.tiptap-editor .tiptap-content:empty::before {
+.tiptap-editor .tiptap-content p.is-editor-empty:first-child::before,
+.tiptap-editor .tiptap-content.ProseMirror-empty-node::before,
+.tiptap-editor .tiptap-content:has(> p:only-child:empty)::before {
   content: attr(data-placeholder);
   color: #9ca3af;
   pointer-events: none;
   float: left;
   height: 0;
+}
+
+.tiptap-editor .ProseMirror {
+  outline: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
 .tiptap-editor .tiptap-content h1 {
