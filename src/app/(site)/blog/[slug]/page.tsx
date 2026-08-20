@@ -15,14 +15,17 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = decodeURIComponent(rawSlug);
   try {
-    const post = await prisma.post.findUnique({ where: { slug } });
+    const post =
+      (await prisma.post.findUnique({ where: { slug } })) ||
+      (await prisma.post.findUnique({ where: { id: slug } }));
     if (!post) return buildMetadata({ title: "Post Not Found", path: `/blog/${slug}`, noIndex: true });
     return buildMetadata({
       title: post.seoTitle || post.title,
       description: post.seoDescription || post.excerpt || undefined,
-      path: `/blog/${slug}`,
+      path: `/blog/${post.slug || post.id}`,
       image: resolvePostFeaturedImage(post),
       type: "article",
       publishedTime: post.publishedAt?.toISOString(),
@@ -35,11 +38,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function BlogDetailPage({ params }: Props) {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = decodeURIComponent(rawSlug);
 
   let post = null;
   try {
     post = await prisma.post.findUnique({ where: { slug } });
+    if (!post && slug) {
+      // Fallback for older broken empty-slug posts that were linked by id
+      post = await prisma.post.findUnique({ where: { id: slug } });
+    }
     if (post) {
       await prisma.post.update({ where: { id: post.id }, data: { viewCount: { increment: 1 } } });
     }

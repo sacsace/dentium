@@ -44,7 +44,7 @@ export function NewsSection({ posts }: { posts: Post[] }) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {featured && (
             <AnimatedSection>
-              <Link href={`/blog/${featured.slug}`} className="group block">
+              <Link href={`/blog/${encodeURIComponent(featured.slug || featured.id)}`} className="group block">
                 <div className="relative aspect-[16/10] rounded-sm overflow-hidden mb-4 bg-brand-gray">
                   {featuredImage && (
                     <RemoteImage
@@ -77,7 +77,7 @@ export function NewsSection({ posts }: { posts: Post[] }) {
               return (
                 <AnimatedSection key={post.id} delay={i * 0.1}>
                   <Link
-                    href={`/blog/${post.slug}`}
+                    href={`/blog/${encodeURIComponent(post.slug || post.id)}`}
                     className="group flex gap-4 p-4 rounded-sm hover:bg-brand-gray transition-colors"
                   >
                     {image && (

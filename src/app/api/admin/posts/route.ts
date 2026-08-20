@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
-import slugify from "slugify";
+import { ensureUniqueSlug } from "@/lib/slug";
 import { resolveFeaturedImageForSave } from "@/lib/post-images";
 import { normalizePostStatus, POST_STATUS_ACTIVE } from "@/lib/post-status";
 
@@ -18,7 +18,10 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const data = await req.json();
-  const slug = data.slug || slugify(data.title, { lower: true, strict: true });
+  const slug = await ensureUniqueSlug(data.slug || data.title || "post", async (candidate) => {
+    const found = await prisma.post.findUnique({ where: { slug: candidate }, select: { id: true } });
+    return Boolean(found);
+  }, "post");
 
   const status = normalizePostStatus(data.status);
 

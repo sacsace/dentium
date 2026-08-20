@@ -4,6 +4,8 @@ import { requireAdmin } from "@/lib/auth";
 import { resolveFeaturedImageForSave } from "@/lib/post-images";
 import { normalizePostStatus, POST_STATUS_ACTIVE } from "@/lib/post-status";
 import { notifySubscribersOnBlogPublish } from "@/lib/blog-notify";
+import { ensureUniqueSlug } from "@/lib/slug";
+
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -22,13 +24,24 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const data = await req.json();
 
   const existing = await prisma.post.findUnique({ where: { id } });
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
   const status = normalizePostStatus(data.status);
+  const requestedSlug = typeof data.slug === "string" ? data.slug.trim() : "";
+  const slug = await ensureUniqueSlug(
+    requestedSlug || data.title || existing.title || existing.slug,
+    async (candidate) => {
+      const found = await prisma.post.findUnique({ where: { slug: candidate }, select: { id: true } });
+      return Boolean(found && found.id !== id);
+    },
+    `post-${id.slice(0, 8)}`,
+  );
 
   const post = await prisma.post.update({
     where: { id },
     data: {
       title: data.title,
-      slug: data.slug,
+      slug,
       excerpt: data.excerpt,
       content: data.content,
       featuredImage: resolveFeaturedImageForSave(data),
@@ -41,7 +54,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       seoTitle: data.seoTitle,
       seoDescription: data.seoDescription,
       publishedAt:
-        status === POST_STATUS_ACTIVE && !existing?.publishedAt ? new Date() : existing?.publishedAt,
+        status === POST_STATUS_ACTIVE && !existing.publishedAt ? new Date() : existing.publishedAt,
     },
   });
 
