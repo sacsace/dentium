@@ -1,6 +1,5 @@
 "use client";
 
-import { Languages } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n/LanguageProvider";
 
@@ -18,24 +17,24 @@ export function LanguageToggle({
   return (
     <div
       className={cn(
-        "inline-flex items-center rounded-full border p-0.5 text-xs font-semibold",
-        dark ? "border-white/20 bg-white/5 text-white" : "border-brand-muted bg-white/80 text-brand-navy",
+        "inline-flex items-center gap-0.5 border p-0.5 text-[11px] font-semibold tracking-wide",
+        dark ? "border-white/25 bg-transparent text-white" : "border-brand-muted bg-white text-brand-navy",
         className
       )}
       role="group"
       aria-label={locale === "ko" ? "언어 선택" : "Select language"}
       data-no-translate
     >
-      {!compact && <Languages className="ml-1.5 mr-1 h-3.5 w-3.5 opacity-60" aria-hidden="true" />}
+      {!compact && <span className="px-1.5 opacity-50">LANG</span>}
       <button
         type="button"
         onClick={() => setLocale("ko")}
         className={cn(
-          "rounded-full px-2 py-1 transition-colors",
+          "px-2 py-1 transition-colors",
           locale === "ko"
             ? "bg-brand-accent text-brand-navy"
             : dark
-              ? "text-white/60 hover:text-white"
+              ? "text-white/55 hover:text-white"
               : "text-brand-silver hover:text-brand-navy"
         )}
         aria-pressed={locale === "ko"}
@@ -46,11 +45,11 @@ export function LanguageToggle({
         type="button"
         onClick={() => setLocale("en")}
         className={cn(
-          "rounded-full px-2 py-1 transition-colors",
+          "px-2 py-1 transition-colors",
           locale === "en"
             ? "bg-brand-accent text-brand-navy"
             : dark
-              ? "text-white/60 hover:text-white"
+              ? "text-white/55 hover:text-white"
               : "text-brand-silver hover:text-brand-navy"
         )}
         aria-pressed={locale === "en"}

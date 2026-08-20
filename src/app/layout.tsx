@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import { Inter, Noto_Sans_KR, Playfair_Display } from "next/font/google";
+import { IBM_Plex_Sans, Noto_Sans_KR, Source_Serif_4 } from "next/font/google";
 import { DEFAULT_DESCRIPTION, DEFAULT_KEYWORDS, DEFAULT_OG_IMAGE, DEFAULT_TITLE, SITE_NAME, SITE_URL } from "@/lib/seo";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
 import "./globals.css";
 
-const inter = Inter({
+const plex = IBM_Plex_Sans({
   subsets: ["latin"],
-  variable: "--font-inter",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-plex",
   display: "swap",
 });
 
@@ -17,9 +18,10 @@ const notoSansKr = Noto_Sans_KR({
   display: "swap",
 });
 
-const playfair = Playfair_Display({
+const sourceSerif = Source_Serif_4({
   subsets: ["latin"],
-  variable: "--font-playfair",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-source-serif",
   display: "swap",
 });
 
@@ -74,7 +76,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en-IN" suppressHydrationWarning>
-      <body className={`${inter.variable} ${notoSansKr.variable} ${playfair.variable} font-sans`}>
+      <body className={`${plex.variable} ${notoSansKr.variable} ${sourceSerif.variable} font-sans`}>
         <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>

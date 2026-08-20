@@ -10,12 +10,11 @@
   }
 
   body {
-    @apply bg-white text-brand-dark antialiased;
-    font-feature-settings: "ss01" on, "ss02" on;
-    letter-spacing: -0.01em;
+    @apply bg-brand-gray text-brand-dark antialiased;
+    font-feature-settings: "ss01" on, "kern" on;
+    letter-spacing: -0.011em;
   }
 
-  /* Refined Korean typography */
   html[lang="ko"] body,
   html[data-locale="ko"] body {
     letter-spacing: -0.02em;
@@ -34,8 +33,8 @@
   html[data-locale="ko"] .font-display {
     font-family: "Pretendard Variable", Pretendard, var(--font-noto-sans-kr), system-ui, sans-serif;
     letter-spacing: -0.03em;
-    font-weight: 600;
-    line-height: 1.35;
+    font-weight: 650;
+    line-height: 1.3;
   }
 
   html[lang="ko"] nav,
@@ -45,7 +44,30 @@
   }
 
   ::selection {
-    @apply bg-brand-deep/20 text-brand-navy;
+    @apply bg-brand-accent/35 text-brand-navy;
+  }
+}
+
+@layer components {
+  .glass-menu {
+    @apply bg-white border-b border-brand-muted;
+  }
+
+  .section-eyebrow {
+    @apply text-brand-deep text-[11px] md:text-xs font-semibold tracking-[0.18em] uppercase mb-3;
+  }
+
+  .section-title {
+    @apply font-display text-3xl md:text-4xl font-semibold text-brand-navy tracking-tight;
+  }
+
+  .surface-panel {
+    @apply bg-white border border-brand-muted/80;
+  }
+
+  .hero-feature-panel {
+    background: rgba(7, 17, 28, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.14);
   }
 }
 
@@ -78,14 +100,6 @@
   }
 }
 
-.hero-glass-card {
-  background: rgba(10, 22, 40, 0.72);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
-}
-
 /* Prose styles for blog content */
 .prose-content h2 {
   @apply text-2xl font-semibold text-brand-navy mt-8 mb-4;
@@ -116,7 +130,7 @@
 }
 
 .prose-content img {
-  @apply max-w-full h-auto rounded-sm my-4;
+  @apply max-w-full h-auto my-4;
 }
 
 .prose-content table {
@@ -125,15 +139,15 @@
 
 .prose-content th,
 .prose-content td {
-  @apply border border-gray-200 px-3 py-2 text-left;
+  @apply border border-brand-muted px-3 py-2 text-left;
 }
 
 .prose-content th {
-  @apply bg-brand-gray font-semibold text-brand-navy;
+  @apply bg-brand-light font-semibold text-brand-navy;
 }
 
 .prose-content blockquote {
-  @apply border-l-4 border-brand-deep pl-4 italic text-brand-dark/70 my-4;
+  @apply border-l-4 border-brand-accent pl-4 italic text-brand-dark/70 my-4;
 }
 
 /* TipTap editor */
@@ -187,7 +201,7 @@
 }
 
 .tiptap-editor .tiptap-content img {
-  @apply max-w-full h-auto rounded-sm my-2;
+  @apply max-w-full h-auto my-2;
 }
 
 .tiptap-editor .tiptap-content blockquote {
@@ -197,10 +211,10 @@
 @keyframes popup-in {
   from {
     opacity: 0;
-    transform: translate3d(16px, -8px, 0) scale(0.98);
+    transform: translate3d(12px, -6px, 0);
   }
   to {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0);
   }
 }

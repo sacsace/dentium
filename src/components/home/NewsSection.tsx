@@ -24,18 +24,16 @@ export function NewsSection({ posts }: { posts: Post[] }) {
   const featuredImage = featured ? resolvePostFeaturedImage(featured) : null;
 
   return (
-    <section className="py-24 bg-white">
+    <section className="py-20 md:py-24 bg-white">
       <div className="container mx-auto px-4 lg:px-8">
-        <AnimatedSection className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-4">
+        <AnimatedSection className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
           <div>
-            <p className="text-brand-deep text-sm tracking-[0.2em] uppercase mb-3">Clinical Cases</p>
-            <h2 className="font-display text-3xl md:text-4xl font-semibold text-brand-navy">
-              Blogs
-            </h2>
+            <p className="section-eyebrow">Clinical Cases</p>
+            <h2 className="section-title">Blogs</h2>
           </div>
           <Link
             href="/blog"
-            className="inline-flex items-center gap-2 text-brand-deep font-medium hover:gap-3 transition-all"
+            className="inline-flex items-center gap-2 text-brand-navy font-semibold text-sm border-b border-brand-navy/20 pb-0.5 hover:border-brand-accent hover:text-brand-deep transition-colors"
           >
             View more <ArrowRight className="w-4 h-4" />
           </Link>

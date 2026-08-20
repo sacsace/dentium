@@ -10,15 +10,17 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          navy: "#0A1628",
-          blue: "#1B3A6B",
-          deep: "#0D47A1",
-          light: "#E8EEF7",
-          gray: "#F5F7FA",
-          silver: "#94A3B8",
-          dark: "#1E293B",
-          accent: "#acc90e",
-          "accent-dark": "#8fa70b",
+          navy: "#0B1C2E",
+          blue: "#1A3558",
+          deep: "#1557A0",
+          light: "#EEF2F7",
+          gray: "#F4F6F8",
+          muted: "#D7DEE8",
+          silver: "#6B7C90",
+          dark: "#243447",
+          accent: "#A8C00E",
+          "accent-dark": "#8BA30B",
+          ink: "#07111C",
         },
       },
       fontFamily: {
@@ -26,27 +28,36 @@ const config: Config = {
           "Pretendard Variable",
           "Pretendard",
           "var(--font-noto-sans-kr)",
-          "var(--font-inter)",
-          "system-ui",
+          "var(--font-plex)",
+          "ui-sans-serif",
           "sans-serif",
         ],
         display: [
-          "var(--font-playfair)",
-          "Pretendard Variable",
-          "Pretendard",
-          "var(--font-noto-sans-kr)",
+          "var(--font-source-serif)",
           "Georgia",
+          "Times New Roman",
           "serif",
         ],
       },
+      boxShadow: {
+        soft: "0 1px 0 rgba(11, 28, 46, 0.06), 0 8px 24px rgba(11, 28, 46, 0.06)",
+        lift: "0 12px 28px rgba(11, 28, 46, 0.10)",
+      },
+      backgroundImage: {
+        "surface-grid":
+          "linear-gradient(rgba(11,28,46,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(11,28,46,0.035) 1px, transparent 1px)",
+        "navy-wash":
+          "linear-gradient(135deg, #0B1C2E 0%, #132A44 55%, #0B1C2E 100%)",
+      },
+      backgroundSize: {
+        "grid-sm": "28px 28px",
+      },
       animation: {
-        "fade-in": "fadeIn 0.6s ease-out forwards",
-        "slide-up": "slideUp 0.6s ease-out forwards",
-        "slide-down": "slideDown 0.3s ease-out forwards",
-        "ken-burns": "kenBurns 20s ease-out infinite alternate",
-        "float": "float 6s ease-in-out infinite",
-        "pulse-slow": "pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-        "scroll-hint": "scrollHint 2s ease-in-out infinite",
+        "fade-in": "fadeIn 0.5s ease-out forwards",
+        "slide-up": "slideUp 0.5s ease-out forwards",
+        "slide-down": "slideDown 0.25s ease-out forwards",
+        "ken-burns": "kenBurns 28s ease-out infinite alternate",
+        "scroll-hint": "scrollHint 2.2s ease-in-out infinite",
       },
       keyframes: {
         fadeIn: {
@@ -54,24 +65,20 @@ const config: Config = {
           "100%": { opacity: "1" },
         },
         slideUp: {
-          "0%": { opacity: "0", transform: "translateY(30px)" },
+          "0%": { opacity: "0", transform: "translateY(16px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
         slideDown: {
-          "0%": { opacity: "0", transform: "translateY(-10px)" },
+          "0%": { opacity: "0", transform: "translateY(-8px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
         kenBurns: {
           "0%": { transform: "scale(1)" },
-          "100%": { transform: "scale(1.12)" },
-        },
-        float: {
-          "0%, 100%": { transform: "translateY(0)" },
-          "50%": { transform: "translateY(-12px)" },
+          "100%": { transform: "scale(1.06)" },
         },
         scrollHint: {
-          "0%, 100%": { transform: "translateY(0)", opacity: "1" },
-          "50%": { transform: "translateY(8px)", opacity: "0.5" },
+          "0%, 100%": { transform: "translateY(0)", opacity: "0.85" },
+          "50%": { transform: "translateY(6px)", opacity: "0.4" },
         },
       },
     },

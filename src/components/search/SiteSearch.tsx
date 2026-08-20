@@ -164,7 +164,7 @@ export function SiteSearch({ variant = "header", className, autoFocus }: SiteSea
                       setQuery(term);
                       goToSearch(term);
                     }}
-                    className="px-3 py-1 text-xs rounded-full bg-brand-gray text-brand-dark hover:bg-brand-accent/30"
+                    className="px-3 py-1 text-xs border border-brand-muted bg-brand-gray text-brand-dark hover:bg-brand-light hover:border-brand-navy/20"
                   >
                     {term}
                   </button>

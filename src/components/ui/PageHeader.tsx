@@ -6,14 +6,21 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, subtitle, description }: PageHeaderProps) {
   return (
-    <section className="pt-32 pb-16 bg-brand-navy text-white">
-      <div className="container mx-auto px-4 lg:px-8">
-        {subtitle && (
-          <p className="text-brand-light/60 text-sm tracking-[0.2em] uppercase mb-3">{subtitle}</p>
-        )}
-        <h1 className="font-display text-4xl md:text-5xl font-semibold mb-4">{title}</h1>
+    <section className="relative pt-28 pb-14 md:pt-32 md:pb-16 bg-navy-wash text-white overflow-hidden">
+      <div
+        className="absolute inset-0 bg-surface-grid bg-grid-sm opacity-40"
+        aria-hidden
+      />
+      <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-brand-accent/70 to-transparent" />
+      <div className="container relative mx-auto px-4 lg:px-8">
+        {subtitle && <p className="section-eyebrow !text-brand-accent/90 mb-4">{subtitle}</p>}
+        <h1 className="font-display text-4xl md:text-5xl font-semibold tracking-tight max-w-3xl text-balance">
+          {title}
+        </h1>
         {description && (
-          <p className="text-white/70 max-w-2xl text-lg">{description}</p>
+          <p className="mt-4 text-white/70 max-w-2xl text-base md:text-lg leading-relaxed">
+            {description}
+          </p>
         )}
       </div>
     </section>

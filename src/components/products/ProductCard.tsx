@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingCart, Sparkles, LogIn, ShieldCheck } from "lucide-react";
+import { ShoppingCart, LogIn, ShieldCheck } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { ProductLikeButton } from "@/components/products/ProductLikeButton";
 import type { ClientProduct } from "@/lib/product-client";
@@ -50,29 +50,34 @@ export function ProductCard({
   const priceLabel = getProductPriceLabel(product, priceAccess);
 
   return (
-    <div className="group bg-white rounded-sm overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500">
+    <div className="group surface-panel overflow-hidden hover:border-brand-navy/25 transition-colors">
       <div className="relative aspect-square bg-brand-light overflow-hidden">
         <Link href={productHref} className="block w-full h-full">
           {product.images[0] && (
-            <Image src={product.images[0]} alt={product.name} fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
+            <Image
+              src={product.images[0]}
+              alt={product.name}
+              fill
+              className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            />
           )}
         </Link>
         {product.isNew && (
-          <span className="pointer-events-none absolute top-3 left-3 bg-brand-deep text-white text-xs px-2 py-1 rounded-sm flex items-center gap-1">
-            <Sparkles className="w-3 h-3" /> New
+          <span className="pointer-events-none absolute top-3 left-3 bg-brand-navy text-white text-[11px] font-semibold tracking-wide px-2 py-1">
+            NEW
           </span>
         )}
         {isLoggedIn && <ProductLikeButton productId={product.id} className="absolute top-3 right-3" />}
         {likeCount > 0 && (
-          <span className="absolute top-3 right-14 text-xs bg-white/90 shadow px-2 py-1 rounded-full text-brand-navy">
-            ♥ {likeCount}
+          <span className="absolute top-3 right-14 text-[11px] bg-white border border-brand-muted px-2 py-1 text-brand-navy">
+            {likeCount} likes
           </span>
         )}
         {canPurchase && (
           <button
             type="button"
             onClick={handleAddToCart}
-            className="absolute bottom-3 right-3 p-2.5 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-brand-accent hover:text-brand-navy z-10"
+            className="absolute bottom-3 right-3 p-2.5 bg-white border border-brand-muted opacity-0 group-hover:opacity-100 transition-opacity hover:bg-brand-accent hover:border-brand-accent hover:text-brand-navy z-10"
             aria-label={`Add ${product.name} to cart`}
           >
             <ShoppingCart className="w-4 h-4" />
@@ -80,12 +85,14 @@ export function ProductCard({
         )}
       </div>
 
-      <div className="p-5">
+      <div className="p-4 md:p-5">
         <Link href={productHref} className="block">
           {product.brand && (
-            <p className="text-brand-silver text-xs uppercase tracking-wider mb-1">{product.brand}</p>
+            <p className="text-brand-silver text-[11px] uppercase tracking-[0.14em] mb-1">{product.brand}</p>
           )}
-          <h3 className="font-semibold text-brand-navy mb-1 group-hover:text-brand-deep transition-colors">{product.name}</h3>
+          <h3 className="font-semibold text-brand-navy mb-1 group-hover:text-brand-deep transition-colors">
+            {product.name}
+          </h3>
           {product.shortDesc && (
             <p className="text-brand-silver text-sm mb-3 line-clamp-2">{product.shortDesc}</p>
           )}

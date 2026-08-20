@@ -18,7 +18,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
         <SitePopup />
         <WhatsAppFloat />
         <Header />
-        <main className="min-h-screen">{children}</main>
+        <main className="min-h-screen bg-white">{children}</main>
         <Footer />
       </FavoritesProvider>
     </>

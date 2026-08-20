@@ -46,19 +46,19 @@ export function NewsletterSection({ variant = "home" }: NewsletterSectionProps) 
   };
 
   return (
-    <section className={cn(isFooter ? "bg-brand-deep py-12" : "py-20 bg-brand-gray")}>
+    <section className={cn(isFooter ? "bg-brand-blue py-12 border-t border-white/10" : "py-16 md:py-20 bg-brand-light")}>
       <div className="container mx-auto px-4 lg:px-8 max-w-2xl text-center">
-        <h2 className={cn("font-display text-2xl md:text-3xl font-semibold mb-3", isFooter ? "text-white" : "text-brand-navy")}>
+        <h2 className={cn("font-display text-2xl md:text-3xl font-semibold mb-3 tracking-tight", isFooter ? "text-white" : "text-brand-navy")}>
           Subscribe To Our Newsletter
         </h2>
-        <p className={cn("text-sm mb-6", isFooter ? "text-white/70" : "text-brand-silver")}>
+        <p className={cn("text-sm mb-6 leading-relaxed", isFooter ? "text-white/65" : "text-brand-silver")}>
           Join our subscribe list to get the latest news, updates and special offers delivered directly in your Inbox
         </p>
         {submitted ? (
           <p className={cn("text-sm", isFooter ? "text-white" : "text-brand-deep")}>{message}</p>
         ) : (
           <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-3">
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="email"
                 required
@@ -66,9 +66,9 @@ export function NewsletterSection({ variant = "home" }: NewsletterSectionProps) 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
-                className="flex-1 px-4 py-3 rounded-sm text-sm text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-deep disabled:opacity-60"
+                className="flex-1 px-4 py-3 border border-brand-muted text-sm text-brand-dark focus:outline-none focus:border-brand-navy/40 focus:ring-2 focus:ring-brand-accent/25 disabled:opacity-60"
               />
-              <Button type="submit" variant={isFooter ? "secondary" : "primary"} disabled={loading}>
+              <Button type="submit" variant={isFooter ? "primary" : "secondary"} disabled={loading}>
                 {loading ? "Subscribing..." : "Subscribe"}
               </Button>
             </div>

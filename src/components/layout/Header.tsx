@@ -64,8 +64,8 @@ export function Header() {
   const isHeroMode = isHome && !scrolled && !menuOpen && !isOpen;
 
   const headerBg = menuOpen || isOpen || scrolled || !isHome
-    ? "bg-white/95 backdrop-blur-xl shadow-soft border-b border-brand-muted/50"
-    : "bg-white/70 backdrop-blur-md border-b border-white/50";
+    ? "bg-white border-b border-brand-muted shadow-soft"
+    : "bg-white/90 border-b border-transparent";
 
   const navText = isHeroMode
     ? "text-brand-navy/90 hover:text-brand-deep"
@@ -97,7 +97,7 @@ export function Header() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-40 bg-brand-light/60 backdrop-blur-sm"
+            className="fixed inset-0 z-40 bg-brand-navy/25"
             onClick={onHeaderLeave}
           />
         )}
@@ -158,12 +158,12 @@ export function Header() {
                   <Link
                     href={user.role === "ADMIN" || user.role === "SUPER_ADMIN" ? "/admin" : "/account"}
                     className={cn(
-                      "hidden sm:inline-flex items-center gap-1.5 pl-1.5 pr-2.5 py-1.5 text-sm font-medium rounded-full border border-brand-accent/30 bg-brand-accent/10 transition-colors hover:bg-brand-accent/20",
+                      "hidden sm:inline-flex items-center gap-1.5 pl-1.5 pr-2.5 py-1.5 text-sm font-medium rounded-sm border border-brand-muted bg-brand-gray transition-colors hover:bg-brand-light",
                       navText
                     )}
                     title={user.name}
                   >
-                    <span className="w-7 h-7 rounded-full bg-brand-accent text-brand-navy text-xs font-bold flex items-center justify-center shrink-0 font-display">
+                    <span className="w-7 h-7 rounded-sm bg-brand-accent text-brand-navy text-xs font-bold flex items-center justify-center shrink-0">
                       {displayName.charAt(0).toUpperCase()}
                     </span>
                     <span className="max-w-[72px] 2xl:max-w-[120px] truncate">{displayName}</span>
@@ -188,7 +188,7 @@ export function Header() {
                   </Link>
                   <Link
                     href="/auth/register"
-                    className="hidden md:inline-flex px-4 py-2 text-sm font-semibold rounded-full bg-brand-accent text-brand-navy hover:bg-brand-accent-dark transition-colors"
+                    className="hidden md:inline-flex px-4 py-2 text-sm font-semibold rounded-sm bg-brand-accent text-brand-navy hover:bg-brand-accent-dark transition-colors"
                   >
                     {t("Sign Up")}
                   </Link>

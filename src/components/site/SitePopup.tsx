@@ -83,13 +83,13 @@ export function SitePopup() {
         aria-labelledby="site-popup-title"
         className="pointer-events-auto absolute top-[12%] right-4 md:right-8 w-[min(100%-2rem,24rem)] origin-top-right animate-[popup-in_0.35s_ease-out]"
       >
-        <div className="relative overflow-hidden rounded-2xl border border-white/70 bg-white shadow-[0_24px_60px_rgba(10,22,40,0.28)]">
-          <div className="h-1.5 w-full bg-gradient-to-r from-brand-accent via-brand-deep to-brand-navy" />
+        <div className="relative overflow-hidden border border-brand-muted bg-white shadow-lift">
+          <div className="h-1 w-full bg-brand-accent" />
 
           <button
             type="button"
             onClick={() => setVisible(false)}
-            className="absolute top-4 right-4 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-brand-navy shadow-sm transition-colors hover:bg-brand-gray hover:text-brand-deep"
+            className="absolute top-4 right-4 z-10 flex h-8 w-8 items-center justify-center border border-brand-muted bg-white text-brand-navy transition-colors hover:bg-brand-gray hover:text-brand-deep"
             aria-label="Close popup"
           >
             <X className="h-4 w-4" />
@@ -107,13 +107,13 @@ export function SitePopup() {
             </h2>
 
             {popup.contentType === "IMAGE" && popup.image && (
-              <div className="relative mt-4 aspect-video overflow-hidden rounded-xl bg-brand-gray ring-1 ring-gray-100">
+              <div className="relative mt-4 aspect-video overflow-hidden bg-brand-gray border border-brand-muted">
                 <Image src={popup.image} alt={popup.title} fill className="object-cover" />
               </div>
             )}
 
             {popup.contentType === "VIDEO" && popup.videoUrl && (
-              <div className="mt-4 aspect-video overflow-hidden rounded-xl bg-black ring-1 ring-gray-100">
+              <div className="mt-4 aspect-video overflow-hidden bg-black border border-brand-muted">
                 <iframe
                   src={popup.videoUrl}
                   title={popup.title}

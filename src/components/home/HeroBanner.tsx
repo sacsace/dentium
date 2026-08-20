@@ -84,22 +84,15 @@ function normalizeSlides(slides: readonly HeroSlideConfig[]): HeroSlide[] {
 }
 
 function SplitTitle({ text }: { text: string }) {
-  const words = text.split(" ");
   return (
-    <h1 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold text-white leading-[1.08] overflow-hidden">
-      {words.map((word, i) => (
-        <span key={i} className="inline-block mr-[0.25em] overflow-hidden">
-          <motion.span
-            className="inline-block"
-            initial={{ y: "100%", opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.7, delay: 0.15 + i * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
-          >
-            {word}
-          </motion.span>
-        </span>
-      ))}
-    </h1>
+    <motion.h1
+      className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-[4.25rem] font-semibold text-white leading-[1.08] tracking-tight text-balance"
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.55, ease: [0.25, 0.46, 0.45, 0.94] }}
+    >
+      {text}
+    </motion.h1>
   );
 }
 
@@ -221,42 +214,35 @@ export function HeroBanner({ slides: slideConfig }: HeroBannerProps) {
         )}
       </motion.div>
 
-      {isContentSlide && (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <motion.div
-            animate={{ x: [0, 30, 0], y: [0, -20, 0] }}
-            transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-1/4 right-1/4 w-64 h-64 rounded-full bg-brand-accent/5 blur-3xl"
-          />
-        </div>
-      )}
-
       {isContentSlide && activeSlide.kind === "image" && (
         <motion.div
           key={`overlay-${activeSlide.key}`}
-          initial={{ opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, ease: [0.25, 0.46, 0.45, 0.94] }}
+          transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="absolute inset-0 z-20 pt-28 pb-20 lg:pb-16 lg:pt-24 pointer-events-none"
         >
           <div className="container mx-auto px-4 lg:px-8 h-full flex items-end lg:items-center pointer-events-auto">
-            <div className="max-w-2xl lg:max-w-[40%] xl:max-w-[38%]">
+            <div className="max-w-2xl lg:max-w-[42%] xl:max-w-[40%]">
+              <p className="text-brand-accent text-xs tracking-[0.22em] uppercase mb-5 font-semibold">
+                Dentium
+              </p>
               {activeSlide.subtitle && (
-                <p className="text-white/90 text-sm tracking-[0.2em] uppercase mb-4 font-medium">
+                <p className="text-white/80 text-sm tracking-[0.16em] uppercase mb-4 font-medium">
                   {activeSlide.subtitle}
                 </p>
               )}
               <SplitTitle text={activeSlide.title} />
               {activeSlide.description && (
-                <p className="text-white/75 text-lg md:text-xl mt-6 mb-8 leading-relaxed max-w-xl">
+                <p className="text-white/72 text-base md:text-lg mt-6 mb-8 leading-relaxed max-w-xl">
                   {activeSlide.description}
                 </p>
               )}
               {activeSlide.ctaText && activeSlide.ctaLink && (
                 <Link href={activeSlide.ctaLink}>
-                  <Button size="lg" className="group mt-6 shadow-lg shadow-brand-accent/20">
+                  <Button size="lg" className="group mt-2">
                     {activeSlide.ctaText}
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                   </Button>
                 </Link>
               )}
@@ -320,29 +306,29 @@ export function HeroBanner({ slides: slideConfig }: HeroBannerProps) {
         <>
           <button
             onClick={goPrev}
-            className="absolute left-4 lg:left-8 top-1/2 -translate-y-1/2 z-20 p-3 bg-white/10 hover:bg-brand-accent/20 backdrop-blur-md rounded-full text-white transition-all border border-white/10"
+            className="absolute left-4 lg:left-8 top-1/2 -translate-y-1/2 z-20 p-3 bg-brand-ink/45 hover:bg-brand-accent text-white hover:text-brand-navy transition-colors border border-white/15"
             aria-label="Previous slide"
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
           <button
             onClick={goNext}
-            className="absolute right-4 lg:right-8 top-1/2 -translate-y-1/2 z-20 p-3 bg-white/10 hover:bg-brand-accent/20 backdrop-blur-md rounded-full text-white transition-all border border-white/10"
+            className="absolute right-4 lg:right-8 top-1/2 -translate-y-1/2 z-20 p-3 bg-brand-ink/45 hover:bg-brand-accent text-white hover:text-brand-navy transition-colors border border-white/15"
             aria-label="Next slide"
           >
             <ChevronRight className="w-6 h-6" />
           </button>
 
-          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-20 flex gap-3">
+          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-20 flex gap-2">
             {slides.map((slide, i) => (
               <button
                 key={slide.key}
                 onClick={() => goTo(i, i > current ? 1 : -1)}
-                className="group relative h-1 w-12 bg-white/20 rounded-full overflow-hidden"
+                className="group relative h-1 w-10 bg-white/25 overflow-hidden"
                 aria-label={slide.kind === "video" ? "Video slide" : "Image slide"}
               >
                 <motion.span
-                  className="absolute inset-y-0 left-0 bg-brand-accent rounded-full"
+                  className="absolute inset-y-0 left-0 bg-brand-accent"
                   initial={false}
                   animate={{ width: i === current ? "100%" : "0%" }}
                   transition={{

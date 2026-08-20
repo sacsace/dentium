@@ -43,7 +43,7 @@ export function Footer() {
   const { t } = useLanguage();
 
   return (
-    <footer className="bg-brand-navy text-white">
+    <footer className="bg-brand-navy text-white border-t border-brand-ink">
       <NewsletterSection variant="footer" />
 
       <div className="container mx-auto px-4 lg:px-8 py-16">

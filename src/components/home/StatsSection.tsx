@@ -18,7 +18,7 @@ function Counter({ target, suffix }: { target: number; suffix: string }) {
   useEffect(() => {
     if (!isInView) return;
     let start = 0;
-    const duration = 2000;
+    const duration = 1600;
     const step = target / (duration / 16);
     const timer = setInterval(() => {
       start += step;
@@ -34,30 +34,31 @@ function Counter({ target, suffix }: { target: number; suffix: string }) {
 
   return (
     <span ref={ref} className="tabular-nums">
-      {count}{suffix}
+      {count}
+      {suffix}
     </span>
   );
 }
 
 export function StatsSection() {
   return (
-    <section className="relative bg-brand-navy py-16 overflow-hidden">
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(200,212,0,0.03)_50%,transparent_100%)]" />
-      <div className="container mx-auto px-4 lg:px-8">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+    <section className="relative bg-brand-navy py-14 md:py-16 border-y border-brand-ink">
+      <div className="absolute inset-0 bg-surface-grid bg-grid-sm opacity-20" aria-hidden />
+      <div className="container relative mx-auto px-4 lg:px-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-4">
           {stats.map((stat, i) => (
             <motion.div
               key={stat.label}
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.1, duration: 0.6 }}
-              className="text-center"
+              transition={{ delay: i * 0.07, duration: 0.45 }}
+              className="text-center lg:border-l lg:border-white/10 lg:first:border-l-0"
             >
-              <p className="text-4xl md:text-5xl font-display font-semibold text-brand-accent mb-2">
+              <p className="text-3xl md:text-4xl font-display font-semibold text-brand-accent mb-2 tracking-tight">
                 <Counter target={stat.value} suffix={stat.suffix} />
               </p>
-              <p className="text-white/60 text-sm tracking-wide">{stat.label}</p>
+              <p className="text-white/55 text-xs md:text-sm tracking-[0.08em] uppercase">{stat.label}</p>
             </motion.div>
           ))}
         </div>

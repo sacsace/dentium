@@ -3,10 +3,10 @@ import { DentiumLogo } from "@/components/brand/DentiumLogo";
 import { cn } from "@/lib/utils";
 
 export const authInputClass =
-  "w-full px-4 py-3.5 rounded-xl border border-gray-300 bg-white text-sm text-brand-dark placeholder:text-brand-silver/80 shadow-sm transition-all duration-200 focus:outline-none focus:border-brand-deep/60 focus:ring-4 focus:ring-brand-deep/10";
+  "w-full px-4 py-3 border border-brand-muted bg-white text-sm text-brand-dark placeholder:text-brand-silver/80 transition-colors duration-200 focus:outline-none focus:border-brand-navy/40 focus:ring-2 focus:ring-brand-accent/25";
 
 export const authButtonClass =
-  "w-full rounded-xl font-semibold tracking-wide shadow-md shadow-brand-accent/25 ring-1 ring-brand-accent/30";
+  "w-full rounded-sm font-semibold tracking-tight";
 
 type AuthShellProps = {
   title: string;
@@ -17,16 +17,17 @@ type AuthShellProps = {
 
 export function AuthShell({ title, subtitle, children, maxWidth = "md" }: AuthShellProps) {
   return (
-    <section className="min-h-screen pt-28 pb-16 px-4 bg-brand-gray/50">
+    <section className="min-h-screen pt-28 pb-16 px-4 bg-brand-gray">
       <div className={cn("mx-auto", maxWidth === "lg" ? "max-w-lg" : "max-w-md")}>
         <div className="flex justify-center mb-8">
           <DentiumLogo href="/" size="md" />
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-[0_10px_40px_rgba(10,22,40,0.12)] p-8 md:p-10">
-          <div className="text-center mb-8 pb-8 border-b border-gray-200">
-            <h1 className="text-2xl md:text-[1.65rem] font-semibold text-brand-navy tracking-tight">{title}</h1>
-            {subtitle && <p className="text-brand-silver text-sm mt-2 font-normal leading-relaxed">{subtitle}</p>}
+        <div className="surface-panel p-8 md:p-10">
+          <div className="mb-8 pb-6 border-b border-brand-muted">
+            <p className="section-eyebrow !mb-2">Dentium India</p>
+            <h1 className="text-2xl font-semibold text-brand-navy tracking-tight font-display">{title}</h1>
+            {subtitle && <p className="text-brand-silver text-sm mt-2 leading-relaxed">{subtitle}</p>}
           </div>
           {children}
         </div>
@@ -37,13 +38,13 @@ export function AuthShell({ title, subtitle, children, maxWidth = "md" }: AuthSh
 
 export function AuthError({ message }: { message: string }) {
   return (
-    <div className="bg-red-50 text-red-600 text-sm p-3.5 rounded-xl border border-red-200 mb-5">{message}</div>
+    <div className="bg-red-50 text-red-700 text-sm p-3.5 border border-red-200 mb-5">{message}</div>
   );
 }
 
 export function AuthFooterLink({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-center text-sm text-brand-silver mt-8 pt-8 border-t border-gray-200 leading-relaxed">
+    <p className="text-center text-sm text-brand-silver mt-8 pt-6 border-t border-brand-muted leading-relaxed">
       {children}
     </p>
   );
@@ -51,7 +52,7 @@ export function AuthFooterLink({ children }: { children: React.ReactNode }) {
 
 export function AuthLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <Link href={href} className="text-brand-deep font-medium hover:text-brand-blue transition-colors">
+    <Link href={href} className="text-brand-deep font-medium hover:text-brand-navy transition-colors">
       {children}
     </Link>
   );

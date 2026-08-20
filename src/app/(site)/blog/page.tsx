@@ -51,11 +51,11 @@ export default async function BlogPage({ searchParams }: Props) {
               <Link
                 key={filter.href}
                 href={filter.href}
-                className={`px-4 py-2 text-sm rounded-sm transition-colors ${
+                className={`px-4 py-2 text-sm transition-colors border ${
                   (filter.href === "/blog" && !params.type) ||
                   (params.type && filter.href.includes(params.type))
-                    ? "bg-brand-accent text-brand-navy"
-                    : "bg-brand-gray text-brand-dark hover:bg-brand-light"
+                    ? "bg-brand-navy text-white border-brand-navy"
+                    : "bg-white text-brand-dark border-brand-muted hover:border-brand-navy/30"
                 }`}
               >
                 {filter.label}
