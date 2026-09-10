@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ShoppingCart, ChevronDown, User, LogOut } from "lucide-react";
+import { Menu, X, ShoppingCart, ChevronDown, LogOut } from "lucide-react";
 import { SiteSearch } from "@/components/search/SiteSearch";
 import { useCartStore } from "@/store/cart";
 import { clearCartOnLogout } from "@/components/cart/CartAuthSync";
@@ -158,12 +158,12 @@ export function Header() {
                   <Link
                     href={user.role === "ADMIN" || user.role === "SUPER_ADMIN" ? "/admin" : "/account"}
                     className={cn(
-                      "hidden sm:inline-flex items-center gap-1.5 pl-1.5 pr-2.5 py-1.5 text-sm font-medium rounded-sm border border-brand-muted bg-brand-gray transition-colors hover:bg-brand-light",
+                      "hidden sm:inline-flex items-center gap-1.5 pl-1 pr-3 py-1 text-sm font-medium rounded-full border border-brand-muted/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition-colors hover:bg-brand-gray/80",
                       navText
                     )}
                     title={user.name}
                   >
-                    <span className="w-7 h-7 rounded-sm bg-brand-accent text-brand-navy text-xs font-bold flex items-center justify-center shrink-0">
+                    <span className="w-7 h-7 rounded-full bg-brand-accent text-brand-navy text-xs font-bold flex items-center justify-center shrink-0">
                       {displayName.charAt(0).toUpperCase()}
                     </span>
                     <span className="max-w-[72px] 2xl:max-w-[120px] truncate">{displayName}</span>
@@ -171,7 +171,7 @@ export function Header() {
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className={cn("hidden sm:inline-flex p-2.5 rounded-lg transition-colors", iconBtn)}
+                    className={cn("hidden sm:inline-flex p-2.5 rounded-full transition-colors", iconBtn)}
                     aria-label={t("Log out")}
                     title={t("Log out")}
                   >
@@ -182,13 +182,16 @@ export function Header() {
                 <>
                   <Link
                     href="/auth/login"
-                    className={cn("hidden sm:inline-flex px-4 py-2 text-sm font-medium transition-colors", navText)}
+                    className={cn(
+                      "hidden sm:inline-flex px-4 py-1.5 text-sm font-medium rounded-full border border-brand-muted/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition-colors hover:bg-brand-gray/80",
+                      navText
+                    )}
                   >
                     {t("Login")}
                   </Link>
                   <Link
                     href="/auth/register"
-                    className="hidden md:inline-flex px-4 py-2 text-sm font-semibold rounded-sm bg-brand-accent text-brand-navy hover:bg-brand-accent-dark transition-colors"
+                    className="hidden md:inline-flex px-4 py-1.5 text-sm font-semibold rounded-full bg-brand-accent text-brand-navy hover:bg-brand-accent-dark shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition-colors"
                   >
                     {t("Sign Up")}
                   </Link>
@@ -326,15 +329,17 @@ export function Header() {
                       <Link
                         href={user.role === "ADMIN" || user.role === "SUPER_ADMIN" ? "/admin" : "/account"}
                         onClick={() => setIsOpen(false)}
-                        className="flex items-center gap-3 py-3 px-3 text-brand-navy border border-brand-muted rounded-lg text-sm font-medium"
+                        className="flex items-center gap-3 py-2.5 pl-2 pr-4 text-brand-navy border border-brand-muted/80 bg-white rounded-full text-sm font-medium shadow-[0_1px_2px_rgba(15,23,42,0.06)]"
                       >
-                        <User className="w-4 h-4" />
+                        <span className="w-8 h-8 rounded-full bg-brand-accent text-brand-navy text-xs font-bold flex items-center justify-center shrink-0">
+                          {displayName.charAt(0).toUpperCase()}
+                        </span>
                         {user.name}
                       </Link>
                       <button
                         type="button"
                         onClick={handleLogout}
-                        className="w-full py-3 bg-brand-accent/15 text-brand-navy border border-brand-accent/40 rounded-lg text-sm font-medium"
+                        className="w-full py-3 bg-brand-accent/15 text-brand-navy border border-brand-accent/40 rounded-full text-sm font-medium"
                       >
                         {t("Log out")}
                       </button>
@@ -344,14 +349,14 @@ export function Header() {
                       <Link
                         href="/auth/login"
                         onClick={() => setIsOpen(false)}
-                        className="flex-1 text-center py-3 bg-brand-accent text-brand-navy rounded-sm text-sm font-medium"
+                        className="flex-1 text-center py-3 bg-brand-accent text-brand-navy rounded-full text-sm font-medium"
                       >
                         {t("Login")}
                       </Link>
                       <Link
                         href="/auth/register"
                         onClick={() => setIsOpen(false)}
-                        className="flex-1 text-center py-3 bg-brand-accent text-brand-navy rounded-sm text-sm font-medium"
+                        className="flex-1 text-center py-3 bg-brand-accent text-brand-navy rounded-full text-sm font-medium"
                       >
                         {t("Sign Up")}
                       </Link>

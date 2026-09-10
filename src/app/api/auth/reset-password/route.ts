@@ -3,8 +3,12 @@ import { hashPassword } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hashResetToken, validateNewPassword } from "@/lib/password-reset";
 import { getClientIp, rateLimit, rateLimitResponse } from "@/lib/rate-limit";
+import { assertSameOrigin } from "@/lib/security";
 
 export async function POST(req: NextRequest) {
+  const originError = assertSameOrigin(req);
+  if (originError) return originError;
+
   const ip = getClientIp(req);
   const limited = rateLimit(`reset-password:${ip}`, 10, 60 * 60 * 1000);
   if (!limited.ok) return rateLimitResponse(limited.retryAfter);

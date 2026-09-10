@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 import { ensureUniqueSlug } from "@/lib/slug";
 import { resolveFeaturedImageForSave } from "@/lib/post-images";
 import { normalizePostStatus, POST_STATUS_ACTIVE } from "@/lib/post-status";
+import { sanitizeRichHtml } from "@/lib/security";
 
 export async function GET() {
   const session = await requireAdmin();
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
       title: data.title,
       slug,
       excerpt: data.excerpt,
-      content: data.content || "",
+      content: sanitizeRichHtml(data.content || ""),
       featuredImage: resolveFeaturedImageForSave(data),
       type: data.type || "BLOG",
       status,

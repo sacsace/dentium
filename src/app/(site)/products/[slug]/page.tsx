@@ -15,6 +15,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { buildMetadata } from "@/lib/seo";
 import { breadcrumbSchema, productSchema } from "@/lib/seo-schemas";
 import { Check, LogIn, ArrowLeft } from "lucide-react";
+import { sanitizeRichHtml } from "@/lib/security";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -168,7 +169,12 @@ export default async function ProductDetailPage({ params, searchParams }: Props)
           <div className="mt-16 grid grid-cols-1 lg:grid-cols-3 gap-12">
             <div className="lg:col-span-2">
               <h2 className="font-display text-2xl font-semibold text-brand-navy mb-4">Description</h2>
-              <div className="prose-content" dangerouslySetInnerHTML={{ __html: product.description.replace(/\n/g, "<br/>") }} />
+              <div
+                className="prose-content"
+                dangerouslySetInnerHTML={{
+                  __html: sanitizeRichHtml(product.description.replace(/\n/g, "<br/>")),
+                }}
+              />
 
               {specs && Object.keys(specs).length > 0 && (
                 <div className="mt-10">

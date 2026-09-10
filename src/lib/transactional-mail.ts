@@ -1,6 +1,7 @@
 import { sendMail } from "@/lib/mail";
 import { formatPrice } from "@/lib/utils";
 import { SITE_URL } from "@/lib/seo";
+import { escapeHtml } from "@/lib/security";
 
 type QuoteLine = {
   productName: string;
@@ -17,12 +18,14 @@ export async function sendQuoteEmail(options: {
   totalAmount: number;
   message?: string | null;
 }) {
-  const { to, customerName, quoteNumber, lines, totalAmount, message } = options;
+  const { to, quoteNumber, lines, totalAmount } = options;
+  const customerName = escapeHtml(options.customerName);
+  const message = options.message ? escapeHtml(options.message) : null;
   const lineRows = lines
     .map(
       (l) =>
-        `<tr><td style="padding:8px;border-bottom:1px solid #eee">${l.productName}</td>` +
-        `<td style="padding:8px;border-bottom:1px solid #eee">${l.sku || "—"}</td>` +
+        `<tr><td style="padding:8px;border-bottom:1px solid #eee">${escapeHtml(l.productName)}</td>` +
+        `<td style="padding:8px;border-bottom:1px solid #eee">${escapeHtml(l.sku || "—")}</td>` +
         `<td style="padding:8px;border-bottom:1px solid #eee;text-align:right">${l.quantity}</td>` +
         `<td style="padding:8px;border-bottom:1px solid #eee;text-align:right">${formatPrice(l.unitPrice)}</td>` +
         `<td style="padding:8px;border-bottom:1px solid #eee;text-align:right">${formatPrice(l.unitPrice * l.quantity)}</td></tr>`
@@ -34,7 +37,7 @@ export async function sendQuoteEmail(options: {
       <h2 style="color:#1a1a2e">Your Quote from Dentium</h2>
       <p>Dear ${customerName},</p>
       <p>Thank you for your quote request. Please find your quotation details below.</p>
-      <p><strong>Quote #:</strong> ${quoteNumber}</p>
+      <p><strong>Quote #:</strong> ${escapeHtml(quoteNumber)}</p>
       ${message ? `<p><strong>Notes:</strong> ${message}</p>` : ""}
       <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px">
         <thead><tr style="background:#f5f5f5">
@@ -56,7 +59,7 @@ export async function sendQuoteEmail(options: {
     </div>
   `;
 
-  const text = `Dear ${customerName},\n\nYour quote ${quoteNumber} total: ${formatPrice(totalAmount)}\n\nView: ${SITE_URL}/account`;
+  const text = `Dear ${options.customerName},\n\nYour quote ${quoteNumber} total: ${formatPrice(totalAmount)}\n\nView: ${SITE_URL}/account`;
 
   await sendMail({
     to,
@@ -67,7 +70,8 @@ export async function sendQuoteEmail(options: {
 }
 
 export async function sendAccountApprovedEmail(options: { to: string; name: string }) {
-  const { to, name } = options;
+  const { to } = options;
+  const name = escapeHtml(options.name);
   const html = `
     <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#1a1a2e">
       <h2 style="color:#1a1a2e">Account Approved</h2>
@@ -82,13 +86,14 @@ export async function sendAccountApprovedEmail(options: { to: string; name: stri
   await sendMail({
     to,
     subject: "Your Dentium account has been approved",
-    text: `Dear ${name},\n\nYour Associate Member account has been approved. Log in at ${SITE_URL}/auth/login\n\nApply for Full Membership in My Account to view prices and order.`,
+    text: `Dear ${options.name},\n\nYour Associate Member account has been approved. Log in at ${SITE_URL}/auth/login\n\nApply for Full Membership in My Account to view prices and order.`,
     html,
   });
 }
 
 export async function sendFullMemberApprovedEmail(options: { to: string; name: string }) {
-  const { to, name } = options;
+  const { to } = options;
+  const name = escapeHtml(options.name);
   const html = `
     <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#1a1a2e">
       <h2 style="color:#1a1a2e">Full Membership Approved</h2>
@@ -102,7 +107,7 @@ export async function sendFullMemberApprovedEmail(options: { to: string; name: s
   await sendMail({
     to,
     subject: "Your Dentium Full Membership has been approved",
-    text: `Dear ${name},\n\nYour Full Membership is approved. Shop at ${SITE_URL}/shop`,
+    text: `Dear ${options.name},\n\nYour Full Membership is approved. Shop at ${SITE_URL}/shop`,
     html,
   });
 }

@@ -1,8 +1,21 @@
 import { prisma } from "@/lib/prisma";
-import { getVisitorAnalytics } from "@/lib/analytics";
+import { ACCESS_TYPE_LABELS, getVisitorAnalytics, type AccessType } from "@/lib/analytics";
 import { VisitorChart } from "@/components/admin/VisitorChart";
 import { TopPagesTable } from "@/components/admin/TopPagesTable";
-import { Eye, Users, TrendingUp, Globe, Monitor, Smartphone, Tablet } from "lucide-react";
+import {
+  Eye,
+  Users,
+  TrendingUp,
+  Globe,
+  Monitor,
+  Smartphone,
+  Tablet,
+  Link2,
+  Search,
+  Share2,
+  Globe2,
+  MousePointerClick,
+} from "lucide-react";
 import Link from "next/link";
 
 async function getCmsStats() {
@@ -27,6 +40,21 @@ function deviceIcon(device: string) {
   if (device === "mobile") return Smartphone;
   if (device === "tablet") return Tablet;
   return Monitor;
+}
+
+function accessTypeIcon(accessType: AccessType) {
+  switch (accessType) {
+    case "direct":
+      return MousePointerClick;
+    case "internal":
+      return Link2;
+    case "search":
+      return Search;
+    case "social":
+      return Share2;
+    default:
+      return Globe2;
+  }
 }
 
 export default async function AdminDashboard() {
@@ -80,7 +108,7 @@ export default async function AdminDashboard() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
           <div className="xl:col-span-2 bg-white p-6 rounded-sm shadow-sm">
             <h3 className="font-semibold text-brand-navy mb-4">Last 7 Days</h3>
             <VisitorChart data={analytics.dailyStats} />
@@ -105,6 +133,34 @@ export default async function AdminDashboard() {
                         </div>
                         <div className="h-1.5 bg-brand-gray rounded-full overflow-hidden">
                           <div className="h-full bg-brand-deep rounded-full" style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+          <div className="bg-white p-6 rounded-sm shadow-sm">
+            <h3 className="font-semibold text-brand-navy mb-4">Access Type (7 days)</h3>
+            {analytics.accessTypeBreakdown.length === 0 ? (
+              <p className="text-brand-silver text-sm">No data yet.</p>
+            ) : (
+              <ul className="space-y-3">
+                {analytics.accessTypeBreakdown.map((item) => {
+                  const Icon = accessTypeIcon(item.accessType);
+                  const total = analytics.accessTypeBreakdown.reduce((sum, d) => sum + d.count, 0);
+                  const pct = total > 0 ? Math.round((item.count / total) * 100) : 0;
+                  return (
+                    <li key={item.accessType} className="flex items-center gap-3">
+                      <Icon className="w-4 h-4 text-brand-silver shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-brand-navy">{ACCESS_TYPE_LABELS[item.accessType]}</span>
+                          <span className="text-brand-silver">{pct}%</span>
+                        </div>
+                        <div className="h-1.5 bg-brand-gray rounded-full overflow-hidden">
+                          <div className="h-full bg-brand-accent rounded-full" style={{ width: `${pct}%` }} />
                         </div>
                       </div>
                     </li>

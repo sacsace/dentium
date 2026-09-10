@@ -1,4 +1,18 @@
 import { prisma } from "@/lib/prisma";
+import {
+  ACCESS_TYPE_LABELS,
+  RECENT_VISITS_MAX,
+  classifyAccessType,
+  type AccessType,
+} from "@/lib/analytics-access";
+
+export {
+  ACCESS_TYPE_LABELS,
+  RECENT_VISITS_MAX,
+  RECENT_VISITS_PAGE_SIZE,
+  classifyAccessType,
+  type AccessType,
+} from "@/lib/analytics-access";
 
 const BOT_PATTERN =
   /bot|crawl|spider|slurp|mediapartners|facebookexternalhit|bingpreview|headless|lighthouse|pagespeed|wget|curl\/|python-requests/i;
@@ -66,11 +80,13 @@ export type VisitorAnalytics = {
   dailyStats: DailyVisitStat[];
   topPages: TopPageStat[];
   deviceBreakdown: { device: string; count: number }[];
+  accessTypeBreakdown: { accessType: AccessType; count: number }[];
   recentVisits: {
     id: string;
     path: string;
     device: string | null;
     referrer: string | null;
+    accessType: AccessType;
     createdAt: Date;
   }[];
 };
@@ -86,8 +102,23 @@ function emptyAnalytics(days: number): VisitorAnalytics {
     dailyStats: buildEmptyDailyStats(days),
     topPages: [],
     deviceBreakdown: [],
+    accessTypeBreakdown: [],
     recentVisits: [],
   };
+}
+
+function buildAccessTypeBreakdown(
+  rows: { referrer: string | null }[]
+): { accessType: AccessType; count: number }[] {
+  const counts = new Map<AccessType, number>();
+  for (const row of rows) {
+    const type = classifyAccessType(row.referrer);
+    counts.set(type, (counts.get(type) || 0) + 1);
+  }
+  return (Object.keys(ACCESS_TYPE_LABELS) as AccessType[])
+    .map((accessType) => ({ accessType, count: counts.get(accessType) || 0 }))
+    .filter((item) => item.count > 0)
+    .sort((a, b) => b.count - a.count);
 }
 
 async function countUniqueVisitors(since?: Date): Promise<number> {
@@ -122,7 +153,8 @@ export async function getVisitorAnalytics(days = 7): Promise<VisitorAnalytics> {
       rawDaily,
       rawTopPages,
       rawDevices,
-      recentVisits,
+      periodReferrers,
+      recentVisitsRaw,
     ] = await Promise.all([
       prisma.pageVisit.count({ where: { createdAt: { gte: todayStart } } }),
       countUniqueVisitors(todayStart),
@@ -156,8 +188,12 @@ export async function getVisitorAnalytics(days = 7): Promise<VisitorAnalytics> {
         orderBy: { _count: { device: "desc" } },
       }),
       prisma.pageVisit.findMany({
+        where: { createdAt: { gte: rangeStart } },
+        select: { referrer: true },
+      }),
+      prisma.pageVisit.findMany({
         orderBy: { createdAt: "desc" },
-        take: 20,
+        take: RECENT_VISITS_MAX,
         select: {
           id: true,
           path: true,
@@ -205,7 +241,11 @@ export async function getVisitorAnalytics(days = 7): Promise<VisitorAnalytics> {
         device: row.device || "unknown",
         count: row._count._all,
       })),
-      recentVisits,
+      accessTypeBreakdown: buildAccessTypeBreakdown(periodReferrers),
+      recentVisits: recentVisitsRaw.map((visit) => ({
+        ...visit,
+        accessType: classifyAccessType(visit.referrer),
+      })),
     };
   } catch (error) {
     console.error("[analytics] Failed to load visitor stats:", error);

@@ -3,12 +3,19 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   createToken,
+  clearAuthCookie,
   getSession,
   hashPassword,
   setAuthCookie,
   verifyPassword,
 } from "@/lib/auth";
 import { validateNewPassword } from "@/lib/password-reset";
+import {
+  createEmailVerificationToken,
+  sendEmailVerificationEmail,
+} from "@/lib/email-verification";
+import { assertSameOrigin, isValidEmail, normalizeEmail } from "@/lib/security";
+import { formatSmtpError } from "@/lib/mail";
 
 const profileSelect = {
   id: true,
@@ -52,6 +59,9 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
+  const originError = assertSameOrigin(req);
+  if (originError) return originError;
+
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -62,7 +72,7 @@ export async function PATCH(req: NextRequest) {
     const {
       firstName,
       lastName,
-      email,
+      email: rawEmail,
       phone,
       company,
       gstin,
@@ -81,18 +91,31 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    if (email && email !== existing.email) {
-      const taken = await prisma.user.findUnique({ where: { email } });
-      if (taken) {
-        return NextResponse.json({ error: "Email already in use" }, { status: 409 });
+    const email =
+      rawEmail !== undefined && typeof rawEmail === "string" ? normalizeEmail(rawEmail) : undefined;
+    if (email !== undefined) {
+      if (!isValidEmail(email)) {
+        return NextResponse.json({ error: "Please enter a valid email address" }, { status: 400 });
+      }
+      if (email !== existing.email) {
+        const taken = await prisma.user.findUnique({ where: { email } });
+        if (taken) {
+          return NextResponse.json({ error: "Email already in use" }, { status: 409 });
+        }
       }
     }
 
     const data: Prisma.UserUpdateInput = {};
+    let emailChanged = false;
 
     if (firstName !== undefined) data.firstName = firstName || undefined;
     if (lastName !== undefined) data.lastName = lastName || undefined;
-    if (email !== undefined) data.email = email;
+    if (email !== undefined && email !== existing.email) {
+      data.email = email;
+      data.emailVerifiedAt = null;
+      data.sessionVersion = { increment: 1 };
+      emailChanged = true;
+    }
     if (phone !== undefined) data.phone = phone || undefined;
     if (company !== undefined) data.company = company || undefined;
     if (gstin !== undefined) data.gstin = gstin || undefined;
@@ -129,6 +152,25 @@ export async function PATCH(req: NextRequest) {
       data,
       select: profileSelect,
     });
+
+    if (emailChanged) {
+      try {
+        const { token } = await createEmailVerificationToken(user.id);
+        await sendEmailVerificationEmail({
+          to: user.email,
+          name: user.name,
+          token,
+        });
+      } catch (error) {
+        console.error("Re-verification email failed:", formatSmtpError(error));
+      }
+      await clearAuthCookie();
+      return NextResponse.json({
+        user,
+        emailVerificationRequired: true,
+        message: "Email updated. Please verify the new address before logging in again.",
+      });
+    }
 
     if (user.name !== session.name || user.email !== session.email || Boolean(newPassword)) {
       const token = await createToken({

@@ -3,11 +3,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createPasswordResetToken, sendPasswordResetEmail } from "@/lib/password-reset";
 import { getClientIp, rateLimit, rateLimitResponse } from "@/lib/rate-limit";
+import { assertSameOrigin } from "@/lib/security";
 
 const GENERIC_MESSAGE =
   "If an account exists for that email, password reset instructions have been sent.";
 
 export async function POST(req: NextRequest) {
+  const originError = assertSameOrigin(req);
+  if (originError) return originError;
+
   const ip = getClientIp(req);
   const ipLimit = rateLimit(`forgot-password:ip:${ip}`, 5, 60 * 60 * 1000);
   if (!ipLimit.ok) return rateLimitResponse(ipLimit.retryAfter);

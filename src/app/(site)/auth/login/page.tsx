@@ -18,12 +18,14 @@ export default function LoginPage() {
   const router = useRouter();
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const [needsVerification, setNeedsVerification] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setNeedsVerification(false);
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -33,13 +35,13 @@ export default function LoginPage() {
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Login failed");
+        if (data.code === "EMAIL_NOT_VERIFIED") setNeedsVerification(true);
         return;
       }
+      notifyAuthChange();
       if (data.user.role === "ADMIN" || data.user.role === "SUPER_ADMIN") {
-        notifyAuthChange();
         router.push("/admin");
       } else {
-        notifyAuthChange();
         router.push("/");
       }
       router.refresh();
@@ -53,6 +55,11 @@ export default function LoginPage() {
   return (
     <AuthShell title="Sign In" subtitle="Use your Dentium Account">
       {error && <AuthError message={error} />}
+      {needsVerification && (
+        <p className="mb-4 text-sm text-brand-silver">
+          <AuthLink href={`/auth/verify-email`}>Resend verification email</AuthLink>
+        </p>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <input

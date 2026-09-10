@@ -38,6 +38,21 @@ const config: Config = {
           "Times New Roman",
           "serif",
         ],
+        adminEn: [
+          "var(--font-plex)",
+          "IBM Plex Sans",
+          "ui-sans-serif",
+          "system-ui",
+          "sans-serif",
+        ],
+        adminKo: [
+          "Pretendard Variable",
+          "Pretendard",
+          "var(--font-noto-sans-kr)",
+          "Noto Sans KR",
+          "system-ui",
+          "sans-serif",
+        ],
       },
       boxShadow: {
         soft: "0 1px 0 rgba(11, 28, 46, 0.06), 0 8px 24px rgba(11, 28, 46, 0.06)",

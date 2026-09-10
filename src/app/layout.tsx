@@ -16,6 +16,7 @@ const notoSansKr = Noto_Sans_KR({
   weight: ["300", "400", "500", "600", "700"],
   variable: "--font-noto-sans-kr",
   display: "swap",
+  preload: true,
 });
 
 const sourceSerif = Source_Serif_4({

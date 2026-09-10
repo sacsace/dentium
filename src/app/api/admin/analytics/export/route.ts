@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
-import { getVisitorAnalytics } from "@/lib/analytics";
+import { ACCESS_TYPE_LABELS, getVisitorAnalytics } from "@/lib/analytics";
 import { getProductAnalytics } from "@/lib/product-analytics";
 
 function toCsv(rows: string[][]): string {
@@ -67,6 +67,12 @@ export async function GET(req: NextRequest) {
     [],
     ["Top Pages — Path", "Views", "Visitors"],
     ...analytics.topPages.map((p) => [p.path, String(p.views), String(p.visitors)]),
+    [],
+    ["Devices — Type", "Count"],
+    ...analytics.deviceBreakdown.map((d) => [d.device, String(d.count)]),
+    [],
+    ["Access Type", "Count"],
+    ...analytics.accessTypeBreakdown.map((d) => [ACCESS_TYPE_LABELS[d.accessType], String(d.count)]),
   ];
 
   const csv = toCsv(summaryRows);

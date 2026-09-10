@@ -98,7 +98,10 @@ export default function RegisterPage() {
         setError(data.error || "Registration failed");
         return;
       }
-      setSuccess(data.message || "Registration submitted. You will receive an email once your account is approved.");
+      setSuccess(
+        data.message ||
+          "Registration submitted. Please verify your email, then wait for admin approval."
+      );
       setForm({ firstName: "", lastName: "", email: "", phone: "", password: "", confirmPassword: "" });
       setErpMatch(null);
     } catch {
@@ -115,8 +118,13 @@ export default function RegisterPage() {
       maxWidth="lg"
     >
       {success && (
-        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-sm text-green-800 text-sm">
-          {success}
+        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-sm text-green-800 text-sm space-y-2">
+          <p>{success}</p>
+          <p>
+            <AuthLink href="/auth/verify-email">Resend verification email</AuthLink>
+            {" · "}
+            <AuthLink href="/auth/login">Go to login</AuthLink>
+          </p>
         </div>
       )}
       {error && <AuthError message={error} />}
@@ -173,11 +181,16 @@ export default function RegisterPage() {
         <input
           required
           type="password"
-          placeholder="Password *"
+          placeholder="Password * (10+ chars, upper/lower, number, symbol)"
           value={form.password}
           onChange={(e) => setForm({ ...form, password: e.target.value })}
           className={authInputClass}
+          minLength={10}
+          autoComplete="new-password"
         />
+        <p className="text-xs text-brand-silver -mt-2">
+          Use at least 10 characters with uppercase, lowercase, a number, and a special character.
+        </p>
         <input
           required
           type="password"
@@ -185,6 +198,8 @@ export default function RegisterPage() {
           value={form.confirmPassword}
           onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
           className={authInputClass}
+          minLength={10}
+          autoComplete="new-password"
         />
         <Button type="submit" className={authButtonClass} disabled={loading}>
           <UserPlus className="w-4 h-4" />

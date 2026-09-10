@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
+import { sanitizeRichHtml } from "@/lib/security";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireAdmin();
@@ -14,7 +15,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     data: {
       title: data.title,
       slug: data.slug,
-      description: data.description,
+      description: sanitizeRichHtml(data.description || ""),
       excerpt: data.excerpt,
       featuredImage: data.featuredImage,
       location: data.location,

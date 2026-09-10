@@ -7,9 +7,12 @@ import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminDialogProvider } from "@/components/admin/ConfirmDialog";
 import { DentiumLogo } from "@/components/brand/DentiumLogo";
 import { LanguageToggle } from "@/components/layout/LanguageToggle";
+import { useLanguage } from "@/i18n/LanguageProvider";
+import { cn } from "@/lib/utils";
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { locale } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
@@ -25,19 +28,25 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   return (
     <AdminDialogProvider>
-      <div className="flex h-screen max-h-dvh overflow-hidden bg-brand-gray">
+      <div
+        className={cn(
+          "admin-shell flex h-screen max-h-dvh overflow-hidden bg-brand-gray",
+          locale === "ko" ? "admin-shell--ko" : "admin-shell--en"
+        )}
+        data-admin-locale={locale}
+      >
         <header className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-brand-navy border-b border-white/10 flex items-center gap-3 px-4">
-        <button
-          type="button"
-          onClick={() => setMobileOpen(true)}
-          className="p-2 -ml-2 text-white/80 hover:text-white rounded-sm"
-          aria-label="Open menu"
-        >
-          <Menu className="w-6 h-6" />
-        </button>
-        <DentiumLogo href="/admin" size="sm" variant="wordmark" className="opacity-95" />
-        <LanguageToggle compact dark className="ml-auto" />
-        <span className="text-[10px] text-brand-accent/90 uppercase tracking-wider">Admin</span>
+          <button
+            type="button"
+            onClick={() => setMobileOpen(true)}
+            className="p-2 -ml-2 text-white/80 hover:text-white rounded-sm"
+            aria-label="Open menu"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+          <DentiumLogo href="/admin" size="sm" variant="wordmark" className="opacity-95" />
+          <LanguageToggle compact dark className="ml-auto" />
+          <span className="text-[10px] text-brand-accent/90 uppercase tracking-wider">Admin</span>
         </header>
 
         {mobileOpen && (

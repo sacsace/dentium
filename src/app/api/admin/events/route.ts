@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import slugify from "slugify";
+import { sanitizeRichHtml } from "@/lib/security";
 
 export async function GET() {
   const session = await requireAdmin();
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
     data: {
       title: data.title,
       slug,
-      description: data.description || "",
+      description: sanitizeRichHtml(data.description || ""),
       excerpt: data.excerpt,
       featuredImage: data.featuredImage,
       location: data.location,

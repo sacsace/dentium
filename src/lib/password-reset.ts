@@ -1,34 +1,32 @@
-import { createHash, randomBytes } from "crypto";
+import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { sendMail } from "@/lib/mail";
 import { SITE_URL } from "@/lib/seo";
+import { escapeHtml, hashToken } from "@/lib/security";
 
 export const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 
 export function hashResetToken(token: string) {
-  return createHash("sha256").update(token).digest("hex");
+  return hashToken(token);
 }
 
 export function validateNewPassword(password: unknown): string | null {
-  if (typeof password !== "string" || password.length < 8) {
-    return "Password must be at least 8 characters.";
-  }
-  if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
-    return "Password must include at least one letter and one number.";
+  if (typeof password !== "string" || password.length < 10) {
+    return "Password must be at least 10 characters.";
   }
   if (password.length > 128) {
     return "Password must be 128 characters or fewer.";
   }
+  if (!/[a-z]/.test(password) || !/[A-Z]/.test(password)) {
+    return "Password must include both uppercase and lowercase letters.";
+  }
+  if (!/\d/.test(password)) {
+    return "Password must include at least one number.";
+  }
+  if (!/[^A-Za-z0-9]/.test(password)) {
+    return "Password must include at least one special character.";
+  }
   return null;
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
 }
 
 export async function createPasswordResetToken(userId: string) {
@@ -72,7 +70,7 @@ export async function sendPasswordResetEmail(options: {
         <p>Dear ${name},</p>
         <p>We received a request to reset your Dentium password.</p>
         <p style="margin:28px 0">
-          <a href="${resetUrl}" style="display:inline-block;background:#acc90e;color:#0a1628;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:600">
+          <a href="${resetUrl}" style="display:inline-block;background:#acc90e;color:#0a1628;padding:12px 24px;text-decoration:none;border-radius:4px;font-weight:600">
             Reset Password
           </a>
         </p>

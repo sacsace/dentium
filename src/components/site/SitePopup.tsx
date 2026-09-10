@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { sanitizeRichHtml } from "@/lib/html-sanitize";
 
 type Popup = {
   id: string;
@@ -127,7 +128,7 @@ export function SitePopup() {
             {popup.content && (
               <div
                 className="prose prose-sm tiptap-content mt-4 max-w-none text-brand-dark [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-lg"
-                dangerouslySetInnerHTML={{ __html: popup.content }}
+                dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(popup.content) }}
               />
             )}
 

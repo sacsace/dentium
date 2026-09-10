@@ -4,14 +4,25 @@ import { getSession } from "@/lib/auth";
 import { calculateCartPricing, type CartLineInput } from "@/lib/order-pricing";
 import { generateOrderNumber } from "@/lib/utils";
 import { canSeeProductPrices } from "@/lib/membership";
+import { getClientIp, rateLimit, rateLimitResponse } from "@/lib/rate-limit";
+import { isValidEmail, normalizeEmail } from "@/lib/security";
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  const limited = rateLimit(`orders:${ip}`, 20, 60 * 60 * 1000);
+  if (!limited.ok) return rateLimitResponse(limited.retryAfter);
+
   try {
     const session = await getSession();
-    const { name, email, phone, company, message, items, couponCode, quoteOnly } = await req.json();
+    const body = await req.json();
+    const { name, phone, company, message, items, couponCode, quoteOnly } = body;
+    const email = typeof body.email === "string" ? normalizeEmail(body.email) : "";
 
     if (!name || !email || !items?.length) {
       return NextResponse.json({ error: "Name, email, and items are required" }, { status: 400 });
+    }
+    if (!isValidEmail(email)) {
+      return NextResponse.json({ error: "Please enter a valid email address" }, { status: 400 });
     }
 
     if (!quoteOnly && !canSeeProductPrices(session)) {

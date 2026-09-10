@@ -3,6 +3,7 @@ import { OrderStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { ORDER_TAB_RECEIVED_STATUSES } from "@/lib/order";
+import { sanitizeRichHtml } from "@/lib/security";
 
 const ACTIVE_ORDER_STATUSES = ORDER_TAB_RECEIVED_STATUSES.filter(
   (status) => status !== "CANCELLED"
@@ -36,7 +37,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     data: {
       name: data.name,
       slug: data.slug,
-      description: data.description,
+      description: sanitizeRichHtml(data.description || ""),
       shortDesc: data.shortDesc,
       sku: data.sku,
       price: data.price ? parseFloat(data.price) : null,

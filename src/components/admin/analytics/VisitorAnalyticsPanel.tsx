@@ -1,7 +1,23 @@
-import { getVisitorAnalytics } from "@/lib/analytics";
+import {
+  ACCESS_TYPE_LABELS,
+  getVisitorAnalytics,
+  type AccessType,
+} from "@/lib/analytics";
 import { VisitorChart } from "@/components/admin/VisitorChart";
 import { TopPagesTable } from "@/components/admin/TopPagesTable";
-import { Eye, Users, Monitor, Smartphone, Tablet } from "lucide-react";
+import { RecentVisitsTable } from "@/components/admin/analytics/RecentVisitsTable";
+import {
+  Eye,
+  Users,
+  Monitor,
+  Smartphone,
+  Tablet,
+  Link2,
+  Search,
+  Share2,
+  Globe2,
+  MousePointerClick,
+} from "lucide-react";
 
 function deviceIcon(device: string) {
   if (device === "mobile") return Smartphone;
@@ -9,14 +25,30 @@ function deviceIcon(device: string) {
   return Monitor;
 }
 
-function formatDateTime(date: Date) {
-  return new Date(date).toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+function accessTypeIcon(accessType: AccessType) {
+  switch (accessType) {
+    case "direct":
+      return MousePointerClick;
+    case "internal":
+      return Link2;
+    case "search":
+      return Search;
+    case "social":
+      return Share2;
+    default:
+      return Globe2;
+  }
+}
+
+function BreakdownList({
+  empty,
+  children,
+}: {
+  empty: boolean;
+  children: React.ReactNode;
+}) {
+  if (empty) return <p className="text-brand-silver text-sm">No data yet.</p>;
+  return <ul className="space-y-4">{children}</ul>;
 }
 
 export async function VisitorAnalyticsPanel() {
@@ -30,6 +62,11 @@ export async function VisitorAnalyticsPanel() {
     { label: "All-Time — Page Views", value: analytics.totalViews, icon: Eye },
     { label: "All-Time — Visitors", value: analytics.totalVisitors, icon: Users },
   ];
+
+  const recentVisits = analytics.recentVisits.map((visit) => ({
+    ...visit,
+    createdAt: visit.createdAt.toISOString(),
+  }));
 
   return (
     <div className="space-y-8">
@@ -55,12 +92,10 @@ export async function VisitorAnalyticsPanel() {
           <h3 className="font-semibold text-brand-navy mb-4">Daily Trend (30 days)</h3>
           <VisitorChart data={analytics.dailyStats} />
         </div>
-        <div className="bg-white p-6 rounded-sm shadow-sm">
-          <h3 className="font-semibold text-brand-navy mb-4">Devices (30 days)</h3>
-          {analytics.deviceBreakdown.length === 0 ? (
-            <p className="text-brand-silver text-sm">No data yet.</p>
-          ) : (
-            <ul className="space-y-4">
+        <div className="space-y-4">
+          <div className="bg-white p-6 rounded-sm shadow-sm">
+            <h3 className="font-semibold text-brand-navy mb-4">Devices (30 days)</h3>
+            <BreakdownList empty={analytics.deviceBreakdown.length === 0}>
               {analytics.deviceBreakdown.map((item) => {
                 const Icon = deviceIcon(item.device);
                 return (
@@ -73,8 +108,25 @@ export async function VisitorAnalyticsPanel() {
                   </li>
                 );
               })}
-            </ul>
-          )}
+            </BreakdownList>
+          </div>
+          <div className="bg-white p-6 rounded-sm shadow-sm">
+            <h3 className="font-semibold text-brand-navy mb-4">Access Type (30 days)</h3>
+            <BreakdownList empty={analytics.accessTypeBreakdown.length === 0}>
+              {analytics.accessTypeBreakdown.map((item) => {
+                const Icon = accessTypeIcon(item.accessType);
+                return (
+                  <li key={item.accessType} className="flex items-center justify-between">
+                    <span className="flex items-center gap-2 text-brand-navy">
+                      <Icon className="w-4 h-4 text-brand-silver" />
+                      {ACCESS_TYPE_LABELS[item.accessType]}
+                    </span>
+                    <span className="font-semibold text-brand-navy">{item.count.toLocaleString()}</span>
+                  </li>
+                );
+              })}
+            </BreakdownList>
+          </div>
         </div>
       </div>
 
@@ -85,32 +137,7 @@ export async function VisitorAnalyticsPanel() {
 
       <div className="bg-white p-6 rounded-sm shadow-sm">
         <h3 className="font-semibold text-brand-navy mb-4">Recent Visits</h3>
-        {analytics.recentVisits.length === 0 ? (
-          <p className="text-brand-silver text-sm">No visits recorded yet.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-brand-silver border-b border-brand-gray">
-                  <th className="pb-3 font-medium">Time</th>
-                  <th className="pb-3 font-medium">Page</th>
-                  <th className="pb-3 font-medium">Device</th>
-                  <th className="pb-3 font-medium">Referrer</th>
-                </tr>
-              </thead>
-              <tbody>
-                {analytics.recentVisits.map((visit) => (
-                  <tr key={visit.id} className="border-b border-brand-gray/60 last:border-0">
-                    <td className="py-3 pr-4 text-brand-silver whitespace-nowrap">{formatDateTime(visit.createdAt)}</td>
-                    <td className="py-3 pr-4 font-mono text-xs text-brand-navy">{visit.path}</td>
-                    <td className="py-3 pr-4 capitalize text-brand-silver">{visit.device || "unknown"}</td>
-                    <td className="py-3 text-brand-silver text-xs truncate max-w-xs">{visit.referrer || "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <RecentVisitsTable visits={recentVisits} />
       </div>
     </div>
   );

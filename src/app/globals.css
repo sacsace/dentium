@@ -46,6 +46,53 @@
   ::selection {
     @apply bg-brand-accent/35 text-brand-navy;
   }
+
+  /* Admin CMS: English → IBM Plex Sans, Korean → Pretendard / Noto Sans KR */
+  .admin-shell.admin-shell--en {
+    font-family: var(--font-plex), "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.011em;
+    word-break: normal;
+    line-height: 1.5;
+  }
+
+  .admin-shell.admin-shell--en h1,
+  .admin-shell.admin-shell--en h2,
+  .admin-shell.admin-shell--en h3,
+  .admin-shell.admin-shell--en h4,
+  .admin-shell.admin-shell--en .font-display {
+    font-family: var(--font-plex), "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  .admin-shell.admin-shell--ko {
+    font-family: "Pretendard Variable", Pretendard, var(--font-noto-sans-kr), "Noto Sans KR", system-ui, sans-serif;
+    letter-spacing: -0.02em;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    line-height: 1.65;
+  }
+
+  .admin-shell.admin-shell--ko h1,
+  .admin-shell.admin-shell--ko h2,
+  .admin-shell.admin-shell--ko h3,
+  .admin-shell.admin-shell--ko h4,
+  .admin-shell.admin-shell--ko .font-display {
+    font-family: "Pretendard Variable", Pretendard, var(--font-noto-sans-kr), "Noto Sans KR", system-ui, sans-serif;
+    letter-spacing: -0.03em;
+    font-weight: 650;
+    line-height: 1.3;
+  }
+
+  .admin-shell .font-mono,
+  .admin-shell code,
+  .admin-shell kbd,
+  .admin-shell pre {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    letter-spacing: 0;
+    word-break: normal;
+  }
 }
 
 @layer components {

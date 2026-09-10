@@ -5,6 +5,7 @@ import { resolveFeaturedImageForSave } from "@/lib/post-images";
 import { normalizePostStatus, POST_STATUS_ACTIVE } from "@/lib/post-status";
 import { notifySubscribersOnBlogPublish } from "@/lib/blog-notify";
 import { ensureUniqueSlug } from "@/lib/slug";
+import { sanitizeRichHtml } from "@/lib/security";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireAdmin();
@@ -43,7 +44,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       title: data.title,
       slug,
       excerpt: data.excerpt,
-      content: data.content,
+      content: sanitizeRichHtml(data.content || ""),
       featuredImage: resolveFeaturedImageForSave(data),
       type: data.type,
       status,

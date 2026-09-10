@@ -9,6 +9,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { buildMetadata } from "@/lib/seo";
 import { articleSchema, breadcrumbSchema } from "@/lib/seo-schemas";
 import { ArrowLeft } from "lucide-react";
+import { sanitizeRichHtml } from "@/lib/security";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -93,7 +94,7 @@ export default async function BlogDetailPage({ params }: Props) {
           </div>
         )}
 
-        <div className="prose-content" dangerouslySetInnerHTML={{ __html: post.content }} />
+        <div className="prose-content" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(post.content) }} />
 
         {post.tags.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-10 pt-8 border-t">

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
+import { sanitizeRichHtml } from "@/lib/security";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -15,7 +16,7 @@ export async function PUT(req: NextRequest, context: RouteContext) {
     where: { id },
     data: {
       title: data.title,
-      content: data.content || null,
+      content: data.content ? sanitizeRichHtml(data.content) : null,
       image: data.image || null,
       videoUrl: data.videoUrl || null,
       contentType: data.contentType || "IMAGE",

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { buildMetadata } from "@/lib/seo";
 import { breadcrumbSchema, eventSchema } from "@/lib/seo-schemas";
+import { sanitizeRichHtml } from "@/lib/security";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -88,7 +89,12 @@ export default async function EventDetailPage({ params }: Props) {
           )}
         </div>
 
-        <div className="prose-content" dangerouslySetInnerHTML={{ __html: event.description.replace(/\n/g, "<br/>") }} />
+        <div
+          className="prose-content"
+          dangerouslySetInnerHTML={{
+            __html: sanitizeRichHtml(event.description.replace(/\n/g, "<br/>")),
+          }}
+        />
 
         {event.registrationUrl && (
           <div className="mt-10">

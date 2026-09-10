@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword, requireAdmin } from "@/lib/auth";
 import { canAssignRole, listUsersWhere } from "@/lib/admin-users";
 import { validateNewPassword } from "@/lib/password-reset";
+import { isValidEmail, normalizeEmail } from "@/lib/security";
 
 export async function GET() {
   const session = await requireAdmin();
@@ -43,10 +44,14 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { name, email, password, role = "USER", company, phone } = body;
+    const { name, email: rawEmail, password, role = "USER", company, phone } = body;
+    const email = typeof rawEmail === "string" ? normalizeEmail(rawEmail) : "";
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: "Name, email, and password are required" }, { status: 400 });
+    }
+    if (!isValidEmail(email)) {
+      return NextResponse.json({ error: "Please enter a valid email address" }, { status: 400 });
     }
 
     const passwordError = validateNewPassword(password);
@@ -72,6 +77,7 @@ export async function POST(req: NextRequest) {
         company: company || undefined,
         phone: phone || undefined,
         isActive: true,
+        emailVerifiedAt: new Date(),
       },
       select: {
         id: true,

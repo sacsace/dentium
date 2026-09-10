@@ -15,6 +15,9 @@ async function main() {
       role: "SUPER_ADMIN",
       name: "Root Admin",
       isActive: true,
+      emailVerifiedAt: new Date(),
+      failedLoginCount: 0,
+      lockedUntil: null,
     },
     create: {
       email,
@@ -22,6 +25,7 @@ async function main() {
       name: "Root Admin",
       role: "SUPER_ADMIN",
       isActive: true,
+      emailVerifiedAt: new Date(),
     },
   });
 

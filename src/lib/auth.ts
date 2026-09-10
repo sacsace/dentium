@@ -119,12 +119,19 @@ export async function setAuthCookie(token: string) {
 
 export async function clearAuthCookie() {
   const cookieStore = await cookies();
-  cookieStore.delete("auth-token");
+  cookieStore.set("auth-token", "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 0,
+    path: "/",
+  });
 }
 
 export async function authenticateUser(email: string, password: string) {
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user || !user.isActive) return null;
+  if (!user || !user.isActive || !user.emailVerifiedAt) return null;
+  if (user.lockedUntil && user.lockedUntil.getTime() > Date.now()) return null;
   const valid = await verifyPassword(password, user.password);
   if (!valid) return null;
   return {
